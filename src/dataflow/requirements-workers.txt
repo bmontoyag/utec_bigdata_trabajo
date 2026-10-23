@@ -1,0 +1,2 @@
+# Dependencias extra para los workers de Dataflow (usar con --requirements_file solo si se pasa --redis_host)
+redis>=5.0

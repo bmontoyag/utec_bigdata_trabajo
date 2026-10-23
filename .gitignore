@@ -1,0 +1,10 @@
+.DS_Store
+~$*
+__pycache__/
+*.pyc
+.venv/
+venv/
+# Datos pesados: PaySim se descarga de Kaggle (ver src/README.md)
+*.csv
+*.parquet
+.env
