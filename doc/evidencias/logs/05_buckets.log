@@ -1,0 +1,10 @@
+$ gcloud storage buckets list --format="table(name,location,storageClass,versioning_enabled,uniform_bucket_level_access)"
+# proyecto: lumina-bank-utec · 2026-11-09 22:53:12 -05
+
+NAME                             LOCATION  STORAGE_CLASS  VERSIONING_ENABLED  UNIFORM_BUCKET_LEVEL_ACCESS
+lumina-bank-utec-lumina-archive  US                                           True
+lumina-bank-utec-lumina-curated  US                                           True
+lumina-bank-utec-lumina-raw      US                       True                True
+lumina-bank-utec-lumina-temp     US                                           True
+
+# código de salida: 0

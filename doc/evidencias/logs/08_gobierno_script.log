@@ -1,0 +1,61 @@
+$ bash infra/gobierno_seguridad_red.sh
+# proyecto: lumina-bank-utec · 2026-11-10 00:20:03 -05
+
+Operation "operations/acat.p2-678938254786-66d35687-239c-49e4-8123-a9229a6f6e3e" finished successfully.
+==> VPC privada y subred con Private Google Access
+   lumina-vpc ya existe
+   lumina-datos-us-central1 ya existe
+==> Cloud KMS: llave CMEK con rotación cada 90 días
+   keyring ya existe
+   llave ya existe
+  
+Updating gs://lumina-bank-utec-lumina-archive/...
+......
+Dataset 'lumina-bank-utec:lumina_gold' successfully updated.
+==> Auditoría: logs de Cloud Audit → BigQuery (lumina_auditoria)
+   lumina_auditoria ya existe
+==> Policy tags (Data Catalog): taxonomía de sensibilidad
+   la taxonomía ya existe (o falló la creación): revise Dataplex → Policy tags
+==> Dataplex: escaneo de calidad sobre lumina_silver.transacciones_batch
+   el escaneo ya existe
+projects/678938254786/locations/us-central1/dataScans/lumina-dq-transacciones/jobs/e0ed8781-3b71-4096-ad50-ddd9d610be76
+==> Vistas por entidad y señal de fraude compartida
+Waiting on bqjob_r7396e70c5d782bb3_000001a1c3e6bc5c_1 ... (0s) Current status: RUNNING                                                                                      Waiting on bqjob_r7396e70c5d782bb3_000001a1c3e6bc5c_1 ... (1s) Current status: RUNNING                                                                                      Waiting on bqjob_r7396e70c5d782bb3_000001a1c3e6bc5c_1 ... (2s) Current status: RUNNING                                                                                      Waiting on bqjob_r7396e70c5d782bb3_000001a1c3e6bc5c_1 ... (2s) Current status: DONE   
+CREATE TABLE IF NOT EXISTS `lumina-bank-utec.lumina_gold.acceso_entidad` (
+  usuario STRING NOT NULL OPTIONS (description = 'correo del usuario (SESSION_USER)'),
+  entidad_id INT64 NOT NULL
+) OPTIONS (description = 'Gobierno: mapeo usuario → entidad para la vista por entidad'); -- at [7:1]
+Skipped lumina-bank-utec.lumina_gold.acceso_entidad
+
+CREATE OR REPLACE VIEW `lumina-bank-utec.lumina_gold.v_transacciones_entidad`
+OPTIONS (description = 'Seguridad: filas filtradas por entidad del usuario y PII tokenizada') AS
+SELECT t.event_id, t.event_ts, t.fecha, t.tipo, t.monto, t.canal, t.entidad_id, t.distrito_id,
+       TO_HEX(SHA256(CONCAT('lumina-salt', t.cliente_id))) AS cliente_token,  -- seudónimo estable
+       ROUND(t.lat, 2) AS lat_aprox, ROUND(t.lon, 2) AS lon_aprox,            -- geo con menor precisión
+       t.score, t.decision, t.origen
+FROM `lumina-bank-utec.lumina_gold.fact_transacciones` t
+JOIN `lumina-bank-utec.lumina_gold.acceso_entidad` a
+  ON a.entidad_id = t.entidad_id AND a.usuario = SESSION_USER(); -- at [14:1]
+Replaced lumina-bank-utec.lumina_gold.v_transacciones_entidad
+
+CREATE OR REPLACE VIEW `lumina-bank-utec.lumina_gold.v_senal_fraude_compartida`
+OPTIONS (description = 'Gobierno: destinos sospechosos compartidos entre entidades, sin PII') AS
+SELECT TO_HEX(SHA256(CONCAT('lumina-salt', destino_id))) AS destino_token,
+       COUNT(DISTINCT entidad_id) AS entidades_afectadas,
+       COUNT(*) AS alertas,
+       MAX(event_ts) AS ultima_alerta
+FROM `lumina-bank-utec.lumina_silver.alertas_fraude`
+WHERE event_ts >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 30 DAY)
+GROUP BY destino_token
+HAVING entidades_afectadas >= 2 OR alertas >= 3; -- at [25:1]
+Replaced lumina-bank-utec.lumina_gold.v_senal_fraude_compartida
+
+INSERT INTO `lumina-bank-utec.lumina_gold.acceso_entidad` (usuario, entidad_id)
+SELECT SESSION_USER(), 3
+FROM UNNEST([1])
+WHERE NOT EXISTS (SELECT 1 FROM `lumina-bank-utec.lumina_gold.acceso_entidad` WHERE usuario = SESSION_USER()); -- at [37:1]
+Number of affected rows: 0
+
+==> Listo. Lance Dataflow con: --no_use_public_ips --subnetwork regions/us-central1/subnetworks/lumina-datos-us-central1
+
+# código de salida: 0

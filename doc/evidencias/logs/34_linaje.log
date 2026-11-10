@@ -1,0 +1,19 @@
+$ python3 infra/registrar_linaje.py
+# proyecto: lumina-bank-utec · 2026-11-10 09:50:36 -05
+
+OK pubsub_a_dataflow_fraude 1 → 2
+OK bq_load_silver_batch 1 → 1
+OK gold_dim_cliente 1 → 1
+OK gold_dim_distrito 1 → 1
+OK gold_dim_entidad 1 → 1
+OK gold_dim_fecha 1 → 1
+OK gold_fact_transacciones 2 → 1
+OK gold_fact_liquidez_hora 3 → 1
+OK gold_kpi_operativos 2 → 2
+OK gold_congestion 2 → 1
+OK gold_reglas_fraude 1 → 1
+OK gold_benchmark_sector 2 → 1
+OK gold_salud_vs_sector 1 → 1
+OK gobierno_vista_entidad 2 → 1
+
+# código de salida: 0

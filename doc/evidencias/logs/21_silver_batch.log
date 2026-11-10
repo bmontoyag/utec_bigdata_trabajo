@@ -1,0 +1,19 @@
+$ bq show --format=prettyjson lumina_silver.transacciones_batch | python3 -c "import sys,json;d=json.load(sys.stdin);print(\"tabla:\",d[\"id\"]);print(\"filas:\",d[\"numRows\"]);print(\"bytes:\",d[\"numBytes\"]);print(\"partición:\",d[\"timePartitioning\"]);print(\"clustering:\",d[\"clustering\"][\"fields\"])"; bq query --use_legacy_sql=false --format=pretty "SELECT tipo, COUNT(*) AS n, SUM(is_fraud_label) AS fraudes, ROUND(SUM(monto)/1e9,2) AS monto_mil_millones FROM lumina_silver.transacciones_batch GROUP BY tipo ORDER BY n DESC"
+# proyecto: lumina-bank-utec · 2026-11-09 23:06:49 -05
+
+tabla: lumina-bank-utec:lumina_silver.transacciones_batch
+filas: 6362620
+bytes: 1651597395
+partición: {'field': 'event_ts', 'type': 'DAY'}
+clustering: ['distrito_id', 'tipo', 'cliente_id']
++----------+---------+---------+--------------------+
+|   tipo   |    n    | fraudes | monto_mil_millones |
++----------+---------+---------+--------------------+
+| CASH_OUT | 2237500 |    4116 |             394.41 |
+| PAYMENT  | 2151495 |       0 |              28.09 |
+| CASH_IN  | 1399284 |       0 |             236.37 |
+| TRANSFER |  532909 |    4097 |             485.29 |
+| DEBIT    |   41432 |       0 |               0.23 |
++----------+---------+---------+--------------------+
+
+# código de salida: 0

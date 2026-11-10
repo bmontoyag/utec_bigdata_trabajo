@@ -1,0 +1,12 @@
+$ gcloud dataflow jobs update-options 2026-11-09_20_05_40-16619663328803287800 --region us-central1 --min-num-workers 1 --max-num-workers 1 --format='yaml(id,name,currentState,runtimeUpdatableParams)'
+# proyecto: lumina-bank-utec · 2026-11-09 23:18:50 -05
+
+currentState: JOB_STATE_RUNNING
+id: 2026-11-09_20_05_40-16619663328803287800
+name: lumina-fraude-stream
+runtimeUpdatableParams:
+  maxNumWorkers: 1
+  minNumWorkers: 1
+  workerUtilizationHint: 0.8
+
+# código de salida: 0

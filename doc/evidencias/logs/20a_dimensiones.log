@@ -1,0 +1,38 @@
+$ sed "s/PROJECT_ID/lumina-bank-utec/g" sql/02_dimensiones.sql | bq query --use_legacy_sql=false --location=US 2>&1 | grep -E "Created|Replaced|Error|error|line"; bq query --use_legacy_sql=false --format=pretty "SELECT distrito_id, nombre, tipo_zona, region_trends FROM lumina_gold.dim_distrito ORDER BY 1"; bq query --use_legacy_sql=false --format=pretty "SELECT entidad_id, nombre, banco_proxy, ROUND(activos_usd/1e9,1) AS activos_mil_millones_usd FROM lumina_gold.dim_entidad ORDER BY 1"
+# proyecto: lumina-bank-utec · 2026-11-09 23:04:44 -05
+
+Replaced lumina-bank-utec.lumina_gold.dim_distrito
+Replaced lumina-bank-utec.lumina_gold.dim_entidad
+Replaced lumina-bank-utec.lumina_gold.dim_cliente
+Replaced lumina-bank-utec.lumina_gold.dim_fecha
+Replaced lumina-bank-utec.lumina_gold.dim_tipo_transaccion
++-------------+-------------------+-------------+---------------------+
+| distrito_id |      nombre       |  tipo_zona  |    region_trends    |
++-------------+-------------------+-------------+---------------------+
+|           1 | Centro Financiero | MIXTO       | Amazonas Department |
+|           2 | Norte Digital     | MIXTO       | Antioquia           |
+|           3 | Sur Residencial   | RESIDENCIAL | Arauca              |
+|           4 | Este Industrial   | MIXTO       | Atlantico           |
+|           5 | Oeste Portuario   | MIXTO       | Bogota              |
+|           6 | Valle Comercial   | MIXTO       | Bolivar             |
+|           7 | Altos Residencial | RESIDENCIAL | Boyaca              |
+|           8 | Bahía Empresarial | MIXTO       | Caldas              |
++-------------+-------------------+-------------+---------------------+
++------------+-------------------+------------------------------------+--------------------------+
+| entidad_id |      nombre       |            banco_proxy             | activos_mil_millones_usd |
++------------+-------------------+------------------------------------+--------------------------+
+|          1 | Entidad Lumina 01 | JPMORGAN CHASE & CO                |                   2622.5 |
+|          2 | Entidad Lumina 02 | BANK OF AMERICA CORP /DE/          |                   2354.5 |
+|          3 | Entidad Lumina 03 | WELLS FARGO & COMPANY/MN           |                   1951.8 |
+|          4 | Entidad Lumina 04 | CITIGROUP INC                      |                   1917.4 |
+|          5 | Entidad Lumina 05 | US BANCORP DE                      |                    467.4 |
+|          6 | Entidad Lumina 06 | PNC FINANCIAL SERVICES GROUP, INC. |                    382.3 |
+|          7 | Entidad Lumina 07 | CAPITAL ONE FINANCIAL CORP         |                    372.5 |
+|          8 | Entidad Lumina 08 | BANK OF NEW YORK MELLON CORP       |                    371.8 |
+|          9 | Entidad Lumina 09 | STATE STREET CORP                  |                    244.6 |
+|         10 | Entidad Lumina 10 | BB&T CORP                          |                    225.7 |
+|         11 | Entidad Lumina 11 | SUNTRUST BANKS INC                 |                    215.5 |
+|         12 | Entidad Lumina 12 | HSBC USA INC /MD/                  |                    201.3 |
++------------+-------------------+------------------------------------+--------------------------+
+
+# código de salida: 0

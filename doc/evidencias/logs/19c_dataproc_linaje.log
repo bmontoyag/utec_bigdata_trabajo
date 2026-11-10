@@ -1,0 +1,47 @@
+$ gcloud dataproc batches submit pyspark gs://lumina-bank-utec-lumina-temp/code/batch_paysim_etl.py --batch lumina-etl-20261110-linaje --region us-central1 --version 2.2 --properties spark.dataproc.lineage.enabled=true --service-account sa-lumina-pipelines@lumina-bank-utec.iam.gserviceaccount.com --deps-bucket gs://lumina-bank-utec-lumina-temp -- --entrada gs://lumina-bank-utec-lumina-raw/paysim/ --salida gs://lumina-bank-utec-lumina-curated/transacciones/
+# proyecto: lumina-bank-utec · 2026-11-10 09:19:49 -05
+
+Batch [lumina-etl-20261110-linaje] submitted.
+Using the default container image
+time="2026-11-10T14:21:11Z" level=warning msg="cgroup_parent is not set. Use `runtime-config` to get the runtime cgroup driver"
+time="2026-11-10T14:21:11Z" level=warning msg="cgroup_parent is not set. Use `runtime-config` to get the runtime cgroup driver"
+Waiting for container log creation
+PYSPARK_PYTHON=/opt/dataproc/conda/bin/python
+Generating /home/spark/.pip/pip.conf
+Configuring index-url as 'https://us-python.pkg.dev/artifact-registry-python-cache/virtual-python/simple/'
+JAVA_HOME=/usr/lib/jvm/temurin-17-jdk-amd64
+SPARK_EXTRA_CLASSPATH=
+:: loading settings :: file = /etc/spark/conf/ivysettings.xml
+26/11/10 14:21:22 WARN MetricsConfig: Cannot locate configuration: tried hadoop-metrics2-google-hadoop-file-system.properties,hadoop-metrics2.properties
+26/11/10 14:21:22 INFO MetricsSystemImpl: Scheduled Metric snapshot period at 10 second(s).
+26/11/10 14:21:22 INFO MetricsSystemImpl: google-hadoop-file-system metrics system started
+26/11/10 14:21:31 INFO SparkSQLExecutionContext: OpenLineage received Spark event that is configured to be skipped: SparkListenerSQLExecutionStart
+26/11/10 14:21:32 INFO SparkSQLExecutionContext: OpenLineage received Spark event that is configured to be skipped: SparkListenerJobStart
+26/11/10 14:21:49 INFO SparkSQLExecutionContext: OpenLineage received Spark event that is configured to be skipped: SparkListenerJobEnd
+26/11/10 14:21:49 INFO SparkSQLExecutionContext: OpenLineage received Spark event that is configured to be skipped: SparkListenerJobStart
+26/11/10 14:21:50 INFO SparkSQLExecutionContext: OpenLineage received Spark event that is configured to be skipped: SparkListenerSQLExecutionEnd
+26/11/10 14:24:09 INFO RddExecutionContext: Config field is not HadoopMapRedWriteConfigUtil or HadoopMapReduceWriteConfigUtil, it's null
+26/11/10 14:24:09 INFO RddExecutionContext: Found job conf from RDD Configuration: core-default.xml, core-site.xml, mapred-default.xml, mapred-site.xml, yarn-default.xml, yarn-site.xml, hdfs-default.xml, hdfs-rbf-default.xml, hdfs-site.xml, hdfs-rbf-site.xml
+26/11/10 14:24:09 INFO RddExecutionContext: Found output path gs://lumina-bank-utec-lumina-curated/transacciones/fecha=2026-07-01 from RDD MapPartitionsRDD[18] at parquet at NativeMethodAccessorImpl.java:0
+26/11/10 14:24:09 INFO SparkSQLExecutionContext: OpenLineage received Spark event that is configured to be skipped: SparkListenerSQLExecutionStart
+26/11/10 14:24:09 INFO SparkSQLExecutionContext: OpenLineage received Spark event that is configured to be skipped: SparkListenerJobStart
+26/11/10 14:24:12 INFO SparkSQLExecutionContext: OpenLineage received Spark event that is configured to be skipped: SparkListenerJobEnd
+26/11/10 14:24:12 INFO SparkSQLExecutionContext: OpenLineage received Spark event that is configured to be skipped: SparkListenerJobStart
+26/11/10 14:24:12 INFO SparkSQLExecutionContext: OpenLineage received Spark event that is configured to be skipped: SparkListenerSQLExecutionEnd
+[calidad] filas leídas=6362620 escritas=6362620 descartadas=0
+Batch [lumina-etl-20261110-linaje] finished.
+metadata:
+  '@type': type.googleapis.com/google.cloud.dataproc.v1.BatchOperationMetadata
+  batch: projects/lumina-bank-utec/locations/us-central1/batches/lumina-etl-20261110-linaje
+  batchUuid: 6cf792a3-4973-477b-a76a-e25a050e84e1
+  createTime: '2026-11-10T14:19:51.128794Z'
+  description: Batch
+  labels:
+    goog-dataproc-batch-id: lumina-etl-20261110-linaje
+    goog-dataproc-batch-uuid: 6cf792a3-4973-477b-a76a-e25a050e84e1
+    goog-dataproc-drz-resource-uuid: batch-6cf792a3-4973-477b-a76a-e25a050e84e1
+    goog-dataproc-location: us-central1
+  operationType: BATCH
+name: projects/lumina-bank-utec/regions/us-central1/operations/b3dc7da1-e258-39a2-b397-d62a1f87d95f
+
+# código de salida: 0

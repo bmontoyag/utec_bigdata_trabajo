@@ -1,0 +1,24 @@
+$ bq query --use_legacy_sql=false --format=pretty --max_rows=30 'SELECT * FROM lumina_gold.v_desempeno_reglas_fraude'; bq query --use_legacy_sql=false --format=pretty --max_rows=30 'SELECT * FROM lumina_gold.v_ingreso_por_producto LIMIT 10'
+# proyecto: lumina-bank-utec · 2026-11-09 23:38:35 -05
+
++-----+-----+----+-------+--------------------+-------------------+
+| vp  | fp  | fn |  vn   |     precision      |      recall       |
++-----+-----+----+-------+--------------------+-------------------+
+| 179 | 162 |  2 | 91731 | 0.5249266862170088 | 0.988950276243094 |
++-----+-----+----+-------+--------------------+-------------------+
++------------+----------+---------+--------+------------------+
+|   fecha    | producto |  tipo   |  n_tx  | ingreso_estimado |
++------------+----------+---------+--------+------------------+
+| 2026-07-12 | Pagos    | PAYMENT | 123718 |    13278491.3549 |
+| 2026-07-23 | Pagos    | PAYMENT |  17969 |     2377642.3075 |
+| 2026-07-28 | Efectivo | CASH_IN |   3539 |                0 |
+| 2026-07-28 | Cuentas  | DEBIT   |     94 |        576.31688 |
+| 2026-07-01 | Pagos    | PAYMENT | 192949 |    21732963.5388 |
+| 2026-07-06 | Efectivo | CASH_IN | 100088 |                0 |
+| 2026-07-06 | Cuentas  | DEBIT   |   2646 |      25489.00214 |
+| 2026-07-30 | Efectivo | CASH_IN |   2419 |                0 |
+| 2026-07-30 | Cuentas  | DEBIT   |    125 |        1020.8432 |
+| 2026-07-13 | Pagos    | PAYMENT | 142065 |    25741914.6091 |
++------------+----------+---------+--------+------------------+
+
+# código de salida: 0

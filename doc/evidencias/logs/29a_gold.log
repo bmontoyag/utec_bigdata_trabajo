@@ -1,0 +1,16 @@
+$ sed "s/PROJECT_ID/lumina-bank-utec/g" sql/03_gold.sql | bq query --use_legacy_sql=false --location=US 2>&1 | grep -E "^(Created|Replaced)|rror"
+# proyecto: lumina-bank-utec · 2026-11-09 23:07:58 -05
+
+Created lumina-bank-utec.lumina_gold.fact_transacciones
+Created lumina-bank-utec.lumina_gold.fact_liquidez_hora
+Created lumina-bank-utec.lumina_gold.fact_tendencias_semana
+Created lumina-bank-utec.lumina_gold.fact_benchmark_sector
+Created lumina-bank-utec.lumina_gold.fact_mercado_diario
+Created lumina-bank-utec.lumina_gold.v_kpi_operativos_diario
+Created lumina-bank-utec.lumina_gold.v_ingreso_por_producto
+Created lumina-bank-utec.lumina_gold.v_desempeno_reglas_fraude
+Created lumina-bank-utec.lumina_gold.v_salud_financiera_vs_sector
+Created lumina-bank-utec.lumina_gold.v_congestion_distrito_hora
+Created lumina-bank-utec.lumina_gold.v_salud_terminales
+
+# código de salida: 0

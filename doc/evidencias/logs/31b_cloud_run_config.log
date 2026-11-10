@@ -1,0 +1,26 @@
+$ gcloud run services describe lumina-api --region us-central1 --format='yaml(metadata.name,status.url,spec.template.metadata.annotations,spec.template.spec.containerConcurrency,spec.template.spec.timeoutSeconds,spec.template.spec.containers[0].resources.limits,spec.template.spec.serviceAccountName)'
+# proyecto: lumina-bank-utec · 2026-11-09 23:39:58 -05
+
+metadata:
+  name: lumina-api
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/maxScale: '3'
+        run.googleapis.com/client-name: gcloud
+        run.googleapis.com/client-version: 589.0.0
+        run.googleapis.com/startup-cpu-boost: 'true'
+    spec:
+      containerConcurrency: 20
+      containers:
+      - resources:
+          limits:
+            cpu: '1'
+            memory: 512Mi
+      serviceAccountName: sa-lumina-pipelines@lumina-bank-utec.iam.gserviceaccount.com
+      timeoutSeconds: 60
+status:
+  url: https://lumina-api-gk5x4vgopq-uc.a.run.app
+
+# código de salida: 0

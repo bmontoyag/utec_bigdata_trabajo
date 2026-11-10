@@ -1,0 +1,19 @@
+$ gcloud dataflow jobs describe 2026-11-09_20_49_02-5099115295804935858 --region us-central1 --full --format='yaml(id,name,type,currentState,environment.workerPools[0].machineType,environment.workerPools[0].numWorkers,environment.workerPools[0].autoscalingSettings,environment.workerPools[0].network,environment.workerPools[0].subnetwork,environment.workerPools[0].ipConfiguration)'
+# proyecto: lumina-bank-utec · 2026-11-10 00:09:59 -05
+
+currentState: JOB_STATE_RUNNING
+environment:
+  workerPools:
+  - autoscalingSettings:
+      algorithm: AUTOSCALING_ALGORITHM_BASIC
+      maxNumWorkers: 1
+    ipConfiguration: WORKER_IP_PRIVATE
+    machineType: n2-standard-2
+    network: default
+    numWorkers: 1
+    subnetwork: regions/us-central1/subnetworks/lumina-datos-us-central1
+id: 2026-11-09_20_49_02-5099115295804935858
+name: lumina-fraude-stream-v3
+type: JOB_TYPE_STREAMING
+
+# código de salida: 0

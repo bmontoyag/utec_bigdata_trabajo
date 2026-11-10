@@ -1,0 +1,8 @@
+$ TAX=$(curl -s -H "Authorization: Bearer $(gcloud auth print-access-token)" https://datacatalog.googleapis.com/v1/projects/lumina-bank-utec/locations/us/taxonomies | python3 -c 'import sys,json;t=json.load(sys.stdin)["taxonomies"][0];print(t["name"])'); curl -s -H "Authorization: Bearer $(gcloud auth print-access-token)" https://datacatalog.googleapis.com/v1/$TAX | python3 -c 'import sys,json;t=json.load(sys.stdin);print("taxonomía:",t["displayName"],"·",t.get("activatedPolicyTypes"))'; curl -s -H "Authorization: Bearer $(gcloud auth print-access-token)" https://datacatalog.googleapis.com/v1/$TAX/policyTags | python3 -c 'import sys,json;[print(" -",p["displayName"],":",p.get("description","")) for p in json.load(sys.stdin)["policyTags"]]'
+# proyecto: lumina-bank-utec · 2026-11-09 23:39:35 -05
+
+taxonomía: lumina_sensibilidad · ['FINE_GRAINED_ACCESS_CONTROL']
+ - PII_ALTA : montos y saldos por cliente, identificadores
+ - PII_MEDIA : geolocalización y dispositivo
+
+# código de salida: 0

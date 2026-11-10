@@ -1,0 +1,35 @@
+$ bq ls --format=pretty lumina_gold | cut -c1-80; bq query --use_legacy_sql=false --format=pretty 'SELECT origen, COUNT(DISTINCT fecha) AS dias, SUM(n_tx) AS n_tx, ROUND(SUM(monto_total)/1e9,1) AS monto_mil_millones, ROUND(SUM(ingreso_estimado)/1e6,1) AS ingreso_millones FROM lumina_gold.v_kpi_operativos_diario GROUP BY origen'
+# proyecto: lumina-bank-utec · 2026-11-09 23:44:32 -05
+
++------------------------------+-------+--------+-------------------+-----------
+|           tableId            | Type  | Labels | Time Partitioning | Clustered 
++------------------------------+-------+--------+-------------------+-----------
+| acceso_entidad               | TABLE |        |                   |           
+| dim_cliente                  | TABLE |        |                   | cliente_id
+| dim_distrito                 | TABLE |        |                   |           
+| dim_entidad                  | TABLE |        |                   |           
+| dim_fecha                    | TABLE |        |                   |           
+| dim_tipo_transaccion         | TABLE |        |                   |           
+| fact_benchmark_sector        | TABLE |        |                   |           
+| fact_liquidez_hora           | TABLE |        | DAY (field: hora) | distrito_i
+| fact_mercado_diario          | VIEW  |        |                   |           
+| fact_tendencias_semana       | TABLE |        |                   |           
+| fact_transacciones           | VIEW  |        |                   |           
+| v_congestion_distrito_hora   | VIEW  |        |                   |           
+| v_desempeno_reglas_fraude    | VIEW  |        |                   |           
+| v_ingreso_por_producto       | VIEW  |        |                   |           
+| v_kpi_operativos_diario      | VIEW  |        |                   |           
+| v_plan_liquidez_t1           | VIEW  |        |                   |           
+| v_salud_financiera_vs_sector | VIEW  |        |                   |           
+| v_salud_terminales           | VIEW  |        |                   |           
+| v_senal_fraude_compartida    | VIEW  |        |                   |           
+| v_transacciones_entidad      | VIEW  |        |                   |           
++------------------------------+-------+--------+-------------------+-----------
++--------+------+---------+--------------------+------------------+
+| origen | dias |  n_tx   | monto_mil_millones | ingreso_millones |
++--------+------+---------+--------------------+------------------+
+| stream |    1 |   97708 |               21.6 |             46.2 |
+| batch  |   31 | 6362620 |             1144.4 |             2256 |
++--------+------+---------+--------------------+------------------+
+
+# código de salida: 0

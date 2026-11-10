@@ -1,0 +1,14 @@
+$ gcloud projects get-iam-policy lumina-bank-utec --flatten='bindings[].members' --filter='bindings.members:sa-lumina-pipelines' --format='table(bindings.role)'
+# proyecto: lumina-bank-utec · 2026-11-09 23:39:33 -05
+
+ROLE
+roles/bigquery.dataEditor
+roles/bigquery.jobUser
+roles/dataflow.worker
+roles/dataproc.worker
+roles/pubsub.publisher
+roles/pubsub.subscriber
+roles/pubsub.viewer
+roles/storage.objectAdmin
+
+# código de salida: 0

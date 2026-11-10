@@ -1,0 +1,17 @@
+$ gcloud run deploy lumina-api --source api --region us-central1 --service-account sa-lumina-pipelines@lumina-bank-utec.iam.gserviceaccount.com --set-env-vars PROJECT_ID=lumina-bank-utec --no-allow-unauthenticated --cpu 1 --memory 512Mi --concurrency 20 --min-instances 0 --max-instances 3 --timeout 60 --quiet
+# proyecto: lumina-bank-utec · 2026-11-09 22:53:50 -05
+
+Building using Dockerfile and deploying container to Cloud Run service [lumina-api] in project [lumina-bank-utec] region [us-central1]
+Building and deploying new service...
+Validating configuration..............done
+Creating Container Repository....................................................................................................................done
+Uploading sources...............................done
+Building Container..............................................................................................................................................................................................................................................................................................................................................................................................................................................done
+Creating Revision................................................................................................................................done
+Routing traffic.....done
+Done.
+Service [lumina-api] revision [lumina-api-00001-6zb] has been deployed and is serving 100 percent of traffic.
+Service URL: https://lumina-api-678938254786.us-central1.run.app
+Proxy locally with: gcloud run services proxy lumina-api --region us-central1 --project lumina-bank-utec
+
+# código de salida: 0

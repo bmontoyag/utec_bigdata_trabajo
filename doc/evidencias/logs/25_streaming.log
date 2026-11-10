@@ -1,0 +1,29 @@
+$ bq query --use_legacy_sql=false --format=pretty 'SELECT decision, COUNT(*) AS n, ROUND(AVG(score),2) AS score_prom FROM lumina_silver.transacciones_stream WHERE event_ts BETWEEN "2026-11-10 04:07:00" AND "2026-11-10 04:13:00" GROUP BY 1 ORDER BY 2 DESC'; bq query --use_legacy_sql=false --format=pretty 'SELECT FORMAT_TIMESTAMP("%H:%M:%S", event_ts) AS hora, tipo, monto, distrito_id AS dist, score, decision, ARRAY_TO_STRING(reglas, ",") AS reglas FROM lumina_silver.alertas_fraude WHERE event_ts BETWEEN "2026-11-10 04:07:00" AND "2026-11-10 04:13:00" ORDER BY score DESC, event_ts LIMIT 8'; bq query --use_legacy_sql=false --format=pretty 'SELECT COUNT(*) AS lecturas, COUNT(DISTINCT terminal_id) AS terminales, MIN(publish_time) AS desde, MAX(publish_time) AS hasta FROM lumina_bronze.telemetria_raw WHERE DATE(publish_time) = "2026-11-10"'
+# proyecto: lumina-bank-utec · 2026-11-10 00:09:07 -05
+
++----------+-------+------------+
+| decision |   n   | score_prom |
++----------+-------+------------+
+| APROBAR  | 29862 |       0.03 |
+| REVISAR  |    72 |        0.5 |
+| BLOQUEAR |    50 |       0.97 |
++----------+-------+------------+
++----------+----------+------------+------+-------+----------+----------------------------------------------------------------+
+|   hora   |   tipo   |   monto    | dist | score | decision |                             reglas                             |
++----------+----------+------------+------+-------+----------+----------------------------------------------------------------+
+| 04:07:31 | TRANSFER | 1735466.52 |    5 |   1.0 | BLOQUEAR | R1_VACIADO_CUENTA,R2_INCONSISTENCIA_DESTINO,R3_MONTO_ALTO      |
+| 04:07:31 | TRANSFER |  316877.85 |    1 |   1.0 | BLOQUEAR | R1_VACIADO_CUENTA,R2_INCONSISTENCIA_DESTINO,R3_MONTO_ALTO      |
+| 04:07:32 | CASH_OUT |    78810.3 |    8 |   1.0 | BLOQUEAR | R1_VACIADO_CUENTA,R4_VIAJE_IMPOSIBLE                           |
+| 04:07:35 | TRANSFER | 2542664.27 |    6 |   1.0 | BLOQUEAR | R2_INCONSISTENCIA_DESTINO,R3_MONTO_ALTO,R4_VIAJE_IMPOSIBLE     |
+| 04:07:36 | TRANSFER | 1273674.05 |    5 |   1.0 | BLOQUEAR | R1_VACIADO_CUENTA,R2_INCONSISTENCIA_DESTINO,R3_MONTO_ALTO      |
+| 04:07:44 | CASH_OUT |  730574.39 |    8 |   1.0 | BLOQUEAR | R1_VACIADO_CUENTA,R4_VIAJE_IMPOSIBLE                           |
+| 04:07:49 | TRANSFER |   22025.14 |    2 |   1.0 | BLOQUEAR | R1_VACIADO_CUENTA,R2_INCONSISTENCIA_DESTINO,R4_VIAJE_IMPOSIBLE |
+| 04:07:58 | TRANSFER | 5777706.65 |    8 |   1.0 | BLOQUEAR | R1_VACIADO_CUENTA,R2_INCONSISTENCIA_DESTINO,R3_MONTO_ALTO      |
++----------+----------+------------+------+-------+----------+----------------------------------------------------------------+
++----------+------------+---------------------+---------------------+
+| lecturas | terminales |        desde        |        hasta        |
++----------+------------+---------------------+---------------------+
+|     6000 |         50 | 2026-11-10 04:07:51 | 2026-11-10 04:17:47 |
++----------+------------+---------------------+---------------------+
+
+# código de salida: 0

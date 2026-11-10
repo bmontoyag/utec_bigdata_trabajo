@@ -1,0 +1,21 @@
+$ gcloud billing budgets create --billing-account=01D01F-87B06E-355892 --display-name="Lumina Bank UTEC" --budget-amount=180PEN --filter-projects=projects/lumina-bank-utec --threshold-rule=percent=0.5 --threshold-rule=percent=0.9 --threshold-rule=percent=1.0 --format="yaml(displayName,amount,thresholdRules,budgetFilter.projects)"
+# proyecto: lumina-bank-utec · 2026-11-09 22:48:57 -05
+
+Created [f9728553-1299-4979-9142-903bcb30b75e].
+amount:
+  specifiedAmount:
+    currencyCode: PEN
+    units: '180'
+budgetFilter:
+  projects:
+  - projects/678938254786
+displayName: Lumina Bank UTEC
+thresholdRules:
+- spendBasis: CURRENT_SPEND
+  thresholdPercent: 0.5
+- spendBasis: CURRENT_SPEND
+  thresholdPercent: 0.9
+- spendBasis: CURRENT_SPEND
+  thresholdPercent: 1.0
+
+# código de salida: 0

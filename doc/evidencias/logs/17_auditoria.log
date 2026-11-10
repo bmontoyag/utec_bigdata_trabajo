@@ -1,0 +1,16 @@
+$ gcloud logging sinks describe lumina-auditoria --format='yaml(name,destination,filter,writerIdentity,bigqueryOptions)'; bq ls lumina_auditoria
+# proyecto: lumina-bank-utec · 2026-11-09 23:39:45 -05
+
+bigqueryOptions:
+  usePartitionedTables: true
+  usesTimestampColumnPartitioning: true
+destination: bigquery.googleapis.com/projects/lumina-bank-utec/datasets/lumina_auditoria
+filter: logName:"cloudaudit.googleapis.com"
+name: lumina-auditoria
+writerIdentity: serviceAccount:service-678938254786@gcp-sa-logging.iam.gserviceaccount.com
+                 tableId                  Type    Labels     Time Partitioning      Clustered Fields  
+ --------------------------------------- ------- -------- ------------------------ ------------------ 
+  cloudaudit_googleapis_com_activity      TABLE            DAY (field: timestamp)                     
+  cloudaudit_googleapis_com_data_access   TABLE            DAY (field: timestamp)                     
+
+# código de salida: 0

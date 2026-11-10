@@ -1,0 +1,18 @@
+$ gcloud kms keys describe lumina-datos --keyring lumina-kr --location us --format='yaml(name,purpose,rotationPeriod,nextRotationTime,primary.state,primary.algorithm)'; echo; gcloud kms keys get-iam-policy lumina-datos --keyring lumina-kr --location us --format='yaml(bindings)'
+# proyecto: lumina-bank-utec · 2026-11-09 23:39:27 -05
+
+name: projects/lumina-bank-utec/locations/us/keyRings/lumina-kr/cryptoKeys/lumina-datos
+nextRotationTime: '2027-02-08T04:25:48Z'
+primary:
+  algorithm: GOOGLE_SYMMETRIC_ENCRYPTION
+  state: ENABLED
+purpose: ENCRYPT_DECRYPT
+rotationPeriod: 7776000s
+
+bindings:
+- members:
+  - serviceAccount:bq-678938254786@bigquery-encryption.iam.gserviceaccount.com
+  - serviceAccount:service-678938254786@gs-project-accounts.iam.gserviceaccount.com
+  role: roles/cloudkms.cryptoKeyEncrypterDecrypter
+
+# código de salida: 0

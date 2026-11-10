@@ -3,13 +3,20 @@
 Pub/Sub tx-eventos → parseo/validación → estado por cliente (viaje imposible)
 → estado por destino (cuenta mula) → reglas → BigQuery + Pub/Sub alertas (+ Memorystore opcional)
 
-Ejecución en Dataflow:
+Ejecución en Dataflow (laboratorio):
   python fraud_streaming_pipeline.py \
     --project $PROJECT_ID --region us-central1 --runner DataflowRunner \
     --temp_location gs://$PROJECT_ID-lumina-temp/dataflow \
     --service_account_email sa-lumina-pipelines@$PROJECT_ID.iam.gserviceaccount.com \
-    --enable_streaming_engine --max_num_workers 3 --machine_type n1-standard-2 \
+    --enable_streaming_engine --machine_type n2-standard-2 \
+    --num_workers 1 --max_num_workers 2 --autoscaling_algorithm THROUGHPUT_BASED \
     --job_name lumina-fraude-stream
+
+Dimensionamiento (informe de la Entrega 2, sección 4): solo tx-eventos pasa por este pipeline. En la prueba de
+carga un worker n2-standard-2 sostuvo ~75 ev/s con la CPU al 95 %; al 70 % de uso → ~50 ev/s por worker:
+  175 TPS promedio → 4 workers · 2,000 TPS día de pago → 39 · 5,000 TPS diseño → 96
+  Fase MVP: --num_workers 4 --min_num_workers 4 --max_num_workers 40 (Composer sube el mínimo a 20 en días de pago).
+  Antes de producción el camino con estado se optimiza (objetivo 500 ev/s por worker → máximo 15) y se vuelve a medir.
 """
 import argparse
 import json
@@ -217,6 +224,8 @@ def run(argv=None):
              | "BQTransacciones" >> beam.io.WriteToBigQuery(
                  f"{p}:{args.dataset}.transacciones_stream",
                  method=beam.io.WriteToBigQuery.Method.STREAMING_INSERTS,
+                 # agrupa filas entre bundles: sin esto cada evento es casi una llamada insertAll
+                 with_auto_sharding=True,
                  create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
                  write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND))
 
@@ -226,6 +235,7 @@ def run(argv=None):
              | "BQAlertas" >> beam.io.WriteToBigQuery(
                  f"{p}:{args.dataset}.alertas_fraude",
                  method=beam.io.WriteToBigQuery.Method.STREAMING_INSERTS,
+                 with_auto_sharding=True,
                  create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
                  write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND))
         _ = (alertas

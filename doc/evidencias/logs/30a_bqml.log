@@ -1,0 +1,12 @@
+$ sed "s/PROJECT_ID/lumina-bank-utec/g" sql/04_bqml.sql | bq query --use_legacy_sql=false --location=US 2>&1 | grep -E "^(Created|Replaced)|rror"
+# proyecto: lumina-bank-utec · 2026-11-09 23:08:25 -05
+
+Created lumina-bank-utec.lumina_ml.modelo_fraude
+Created lumina-bank-utec.lumina_ml.v_eval_fraude
+Created lumina-bank-utec.lumina_ml.scoring_fraude_stream
+Created lumina-bank-utec.lumina_ml.modelo_liquidez
+Created lumina-bank-utec.lumina_ml.eval_liquidez_diaria
+Created lumina-bank-utec.lumina_ml.pronostico_liquidez
+Created lumina-bank-utec.lumina_gold.v_plan_liquidez_t1
+
+# código de salida: 0

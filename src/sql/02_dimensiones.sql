@@ -4,14 +4,16 @@
 -- Escaneo aprox.: PaySim ~0.5 GB, SEC quick_summary ~5-8 GB, Trends < 1 GB (dentro del free tier de 1 TiB/mes)
 -- =====================================================================
 
--- dim_distrito: 8 distritos de DataLandia, cada uno asociado a una región de Perú en Google Trends.
+-- dim_distrito: 8 distritos de DataLandia, cada uno asociado a una región de Google Trends.
+-- Perú no está en international_top_terms (verificado el 09/11/2026); se usa Colombia (CO) como proxy andino.
 -- La asignación (orden alfabético de regiones) es arbitraria pero reproducible.
 CREATE OR REPLACE TABLE `PROJECT_ID.lumina_gold.dim_distrito` AS
 WITH regiones AS (
   SELECT DISTINCT region_name, region_code
   FROM `bigquery-public-data.google_trends.international_top_terms`
-  WHERE country_code = 'PE'
-    AND refresh_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)
+  WHERE country_code = 'CO'
+    AND refresh_date = (SELECT MAX(refresh_date) FROM `bigquery-public-data.google_trends.international_top_terms`
+                        WHERE country_code = 'CO' AND refresh_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY))
 ),
 numeradas AS (
   SELECT ROW_NUMBER() OVER (ORDER BY region_name) AS distrito_id, region_name, region_code
@@ -30,12 +32,12 @@ FROM numeradas
 WHERE distrito_id <= 8;
 
 -- dim_entidad: las 12 entidades de Lumina. A cada una se le asigna como proxy financiero
--- uno de los 12 bancos comerciales (SIC 6021/6022) con más activos en la SEC (FY2020).
+-- uno de los 12 bancos comerciales (SIC 6021/6022) con más activos en la SEC (10-K del FY2018, el último año con cobertura completa).
 CREATE OR REPLACE TABLE `PROJECT_ID.lumina_gold.dim_entidad` AS
 WITH bancos AS (
   SELECT central_index_key AS cik, ANY_VALUE(company_name) AS banco_proxy, MAX(value) AS activos_usd
   FROM `bigquery-public-data.sec_quarterly_financials.quick_summary`
-  WHERE sic IN ('6021', '6022') AND form = '10-K' AND fiscal_year = 2020
+  WHERE sic IN ('6021', '6022') AND form = '10-K' AND fiscal_year = 2018
     AND measure_tag = 'Assets' AND number_of_quarters = 0
   GROUP BY cik
 )

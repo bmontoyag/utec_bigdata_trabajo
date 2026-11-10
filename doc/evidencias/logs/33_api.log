@@ -1,0 +1,50 @@
+$ TOKEN=$(gcloud auth print-identity-token); curl -s -H "Authorization: Bearer $TOKEN" https://lumina-api-678938254786.us-central1.run.app/salud; echo; echo; curl -s -H "Authorization: Bearer $TOKEN" 'https://lumina-api-678938254786.us-central1.run.app/alertas?minutos=1440&limite=3' | python3 -m json.tool | head -40; echo; curl -s -w '
+HTTP %{http_code} · %{time_total}s
+' -H "Authorization: Bearer $TOKEN" 'https://lumina-api-678938254786.us-central1.run.app/liquidez/1/pronostico' | head -c 700
+# proyecto: lumina-bank-utec · 2026-11-09 23:40:01 -05
+
+{"estado":"ok"}
+
+[
+    {
+        "event_id": "d9ca8ad4-25fc-4871-99a3-c6878b1c77a3",
+        "event_ts": "2026-11-10T04:26:12.593654+00:00",
+        "cliente_id": "C1629507595",
+        "destino_id": "C88641718",
+        "distrito_id": 5,
+        "tipo": "TRANSFER",
+        "monto": 355244.18,
+        "score": 0.5,
+        "decision": "REVISAR",
+        "reglas": [
+            "R3_MONTO_ALTO",
+            "R5_CUENTA_MULA"
+        ]
+    },
+    {
+        "event_id": "c9e7378b-cdb8-4c5b-9a08-9881a9712e98",
+        "event_ts": "2026-11-10T04:26:08.653840+00:00",
+        "cliente_id": "C1814584419",
+        "destino_id": "C2421516",
+        "distrito_id": 4,
+        "tipo": "TRANSFER",
+        "monto": 4434390.02,
+        "score": 0.5,
+        "decision": "REVISAR",
+        "reglas": [
+            "R3_MONTO_ALTO",
+            "R5_CUENTA_MULA"
+        ]
+    },
+    {
+        "event_id": "39e878b3-0b29-40d2-a23f-10b673d0cf65",
+        "event_ts": "2026-11-10T04:26:04.957036+00:00",
+        "cliente_id": "C861184964",
+        "destino_id": "C1300519073",
+        "distrito_id": 4,
+        "tipo": "TRANSFER",
+        "monto": 1242872.2,
+        "score": 0.5,
+
+[{"distrito_id":1,"distrito":"Centro Financiero","fecha":"2026-07-28","efectivo_esperado":165269230.94,"efectivo_recomendado":1763928767.05},{"distrito_id":1,"distrito":"Centro Financiero","fecha":"2026-07-29","efectivo_esperado":168504715.93,"efectivo_recomendado":3091944565.78},{"distrito_id":1,"distrito":"Centro Financiero","fecha":"2026-07-30","efectivo_esperado":169272083.88,"efectivo_recomendado":3949890323.69},{"distrito_id":1,"distrito":"Centro Financiero","fecha":"2026-07-31","efectivo_esperado":170039451.83,"efectivo_recomendado":4644500284.78},{"distrito_id":1,"distrito":"Centro Financiero","fecha":"2026-08-01","efectivo_esperado":170806819.78,"efectivo_recomendado":5244503837.01}
+# código de salida: 0

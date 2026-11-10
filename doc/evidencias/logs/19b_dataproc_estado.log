@@ -1,0 +1,14 @@
+$ gcloud dataproc batches describe lumina-etl-20261110-v2 --region us-central1 --format="yaml(name.basename(),state,stateTime,createTime,runtimeConfig.version,environmentConfig.executionConfig.serviceAccount,runtimeInfo.approximateUsage)"
+# proyecto: lumina-bank-utec · 2026-11-09 23:06:14 -05
+
+createTime: '2026-11-10T04:02:49.578829Z'
+environmentConfig:
+  executionConfig:
+    serviceAccount: sa-lumina-pipelines@lumina-bank-utec.iam.gserviceaccount.com
+name: lumina-etl-20261110-v2
+runtimeConfig:
+  version: 2.2.90
+state: SUCCEEDED
+stateTime: '2026-11-10T04:05:40.133316Z'
+
+# código de salida: 0

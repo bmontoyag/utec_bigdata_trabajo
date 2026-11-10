@@ -1,0 +1,17 @@
+$ gcloud pubsub topics list --format="table(name.basename(),messageRetentionDuration)"; echo; gcloud pubsub subscriptions list --format="table(name.basename(),topic.basename(),bigqueryConfig.table,cloudStorageConfig.bucket,ackDeadlineSeconds)"
+# proyecto: lumina-bank-utec · 2026-11-09 22:53:15 -05
+
+NAME            MESSAGE_RETENTION_DURATION
+tx-eventos      604800s
+tx-eventos-dlq  604800s
+alertas-fraude  604800s
+telemetria      604800s
+
+NAME                     TOPIC           TABLE                                          BUCKET                       ACK_DEADLINE_SECONDS
+tx-eventos-archivo       tx-eventos                                                     lumina-bank-utec-lumina-raw  300
+tx-eventos-dlq-revision  tx-eventos-dlq                                                                              10
+tx-eventos-dataflow      tx-eventos                                                                                  60
+alertas-fraude-demo      alertas-fraude                                                                              10
+telemetria-bq            telemetria      lumina-bank-utec:lumina_bronze.telemetria_raw                               10
+
+# código de salida: 0

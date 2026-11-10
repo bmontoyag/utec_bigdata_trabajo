@@ -1,0 +1,60 @@
+$ echo 'Mensajes sin entregar en tx-eventos-dataflow (máximo por minuto, UTC)'; ../doc/evidencias/metrica.sh pubsub.googleapis.com/subscription/num_undelivered_messages 'AND resource.labels.subscription_id="tx-eventos-dataflow"' 25; echo; echo 'Antigüedad del mensaje más viejo sin confirmar (s)'; ../doc/evidencias/metrica.sh pubsub.googleapis.com/subscription/oldest_unacked_message_age 'AND resource.labels.subscription_id="tx-eventos-dataflow"' 25
+# proyecto: lumina-bank-utec · 2026-11-09 23:37:48 -05
+
+Mensajes sin entregar en tx-eventos-dataflow (máximo por minuto, UTC)
+# {} tx-eventos-dataflow
+04:13 10692
+04:14 1512
+04:15 1505
+04:16 34
+04:17 0
+04:18 0
+04:19 0
+04:20 0
+04:21 60
+04:22 2425
+04:23 1265
+04:24 6151
+04:25 1583
+04:26 15010
+04:27 24518
+04:28 16188
+04:29 16791
+04:30 49821
+04:31 85662
+04:32 34877
+04:33 12362
+04:34 62013
+04:35 113085
+04:36 158953
+04:37 162392
+
+Antigüedad del mensaje más viejo sin confirmar (s)
+# {} tx-eventos-dataflow
+04:13 76
+04:14 114
+04:15 106
+04:16 132
+04:17 0
+04:18 0
+04:19 0
+04:20 0
+04:21 9
+04:22 26
+04:23 47
+04:24 68
+04:25 94
+04:26 54
+04:27 109
+04:28 129
+04:29 107
+04:30 201
+04:31 261
+04:32 269
+04:33 247
+04:34 277
+04:35 222
+04:36 282
+04:37 342
+
+# código de salida: 0

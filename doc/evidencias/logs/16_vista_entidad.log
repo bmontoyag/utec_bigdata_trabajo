@@ -1,0 +1,20 @@
+$ bq query --use_legacy_sql=false --format=pretty 'SELECT entidad_id, origen, COUNT(*) AS filas FROM lumina_gold.v_transacciones_entidad GROUP BY 1,2'; bq query --use_legacy_sql=false --format=pretty 'SELECT event_id, tipo, monto, entidad_id, SUBSTR(cliente_token,1,16) AS cliente_token, lat_aprox, lon_aprox FROM lumina_gold.v_transacciones_entidad LIMIT 5'
+# proyecto: lumina-bank-utec · 2026-11-09 23:39:40 -05
+
++------------+--------+--------+
+| entidad_id | origen | filas  |
++------------+--------+--------+
+|          3 | stream |   7672 |
+|          3 | batch  | 529438 |
++------------+--------+--------+
++----------------------------------+---------+----------+------------+------------------+-----------+-----------+
+|             event_id             |  tipo   |  monto   | entidad_id |  cliente_token   | lat_aprox | lon_aprox |
++----------------------------------+---------+----------+------------+------------------+-----------+-----------+
+| 372b87e127e8f93c55584e9bb46a9f15 | PAYMENT | 10904.31 |          3 | b4be4d098f16b406 |    -11.93 |    -76.98 |
+| e885ae5dc5563975733f0c2014cc2fb1 | PAYMENT |   387.95 |          3 | 088062e680983c95 |    -11.93 |     -77.0 |
+| ee065863d3419dcc50dae5540159c1ad | PAYMENT |  9235.84 |          3 | b59fdc8436d64eb8 |    -11.94 |    -76.98 |
+| 9e4ac8debdfb62a73e76b48d6b8df8a3 | PAYMENT | 17513.96 |          3 | 418802319f304a34 |    -11.93 |     -77.0 |
+| e8e0238b6d99ba98c8ca2ef6dbefb7b0 | PAYMENT |    23505 |          3 | 861e3d3e41963b3b |    -11.95 |     -77.0 |
++----------------------------------+---------+----------+------------+------------------+-----------+-----------+
+
+# código de salida: 0

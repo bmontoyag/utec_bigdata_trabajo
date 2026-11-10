@@ -1,0 +1,14 @@
+$ gcloud dataplex datascans jobs describe 809ee69a-eae5-4359-9786-e5940b1f5148 --datascan=lumina-dq-transacciones --location=us-central1 --view=FULL --format=json | python3 ../doc/evidencias/dq_resultado.py
+# proyecto: lumina-bank-utec · 2026-11-10 00:08:56 -05
+
+job: 809ee69a-eae5-4359-9786-e5940b1f5148 · estado: SUCCEEDED · filas evaluadas: 636421
+resultado global: APROBADO · puntaje: 100.0
+
+columna       dimensión     regla                     evaluadas  aprobadas  resultado
+event_id      UNIQUENESS    uniquenessExpectation        636421     636421  OK
+cliente_id    COMPLETENESS  nonNullExpectation           636421     636421  OK
+monto         VALIDITY      rangeExpectation             636421     636421  OK
+tipo          VALIDITY      setExpectation               636421     636421  OK
+distrito_id   VALIDITY      rangeExpectation             636421     636421  OK
+
+# código de salida: 0

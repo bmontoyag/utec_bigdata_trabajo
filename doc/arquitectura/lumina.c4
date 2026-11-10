@@ -1,0 +1,453 @@
+// Arquitectura de Lumina Bank en notación C4 (LikeC4).
+// Vista previa:  npx likec4 start doc/arquitectura
+// Exportar PNG:  npx likec4 export png doc/arquitectura -o doc/img/c4
+
+specification {
+  color tarjeta #FFFFFF
+  color almacenamiento #E6F4EA
+  color servicio #FEF7E0
+  color transversal #FCE8E6
+
+  element persona {
+    style {
+      shape person
+      color slate
+    }
+  }
+  element sistema {
+    style {
+      color indigo
+    }
+  }
+  element externo {
+    style {
+      color muted
+    }
+  }
+  element contenedor {
+    style {
+      color tarjeta
+    }
+  }
+  element almacen {
+    style {
+      shape storage
+      color almacenamiento
+    }
+  }
+  element expo {
+    style {
+      color servicio
+    }
+  }
+  element control {
+    style {
+      color transversal
+    }
+  }
+
+  tag streaming
+  tag batch
+  tag gobierno
+  tag seguridad
+  tag redes
+}
+
+model {
+  // ------------------------------------------------------------ Personas y sistemas externos
+  canales = persona 'Canales del front-end' {
+    description 'App móvil, cajeros y POS de las 12 entidades. Piden la autorización de cada transacción.'
+  }
+  soc = persona 'SOC antifraude' {
+    description 'Analistas que revisan alertas y bloqueos.'
+  }
+  gerencia = persona 'Gerencia y analistas' {
+    description 'Informes operativos y plan de liquidez.'
+  }
+  entidades = persona '12 entidades financieras' {
+    description 'Cada una consulta solo sus datos y la señal de fraude compartida.'
+  }
+  cores = externo 'Cores bancarios' {
+    description 'Bases transaccionales de las 12 entidades: saldos y cierres contables.'
+  }
+  terminales = externo 'Cajeros y servidores' {
+    description 'Envían telemetría cada 30 s.'
+  }
+  publicos = externo 'Datos públicos y de mercado' {
+    description 'SEC Financials, Google Trends y EDI (Analytics Hub).'
+  }
+
+  lumina = sistema 'Plataforma de datos Lumina' {
+    description 'Back-end de datos en Google Cloud: fraude en tiempo real, liquidez T+1 e informes.'
+
+    // ---------------------------------------------------------- Ingesta
+    pubsubTx = contenedor 'Pub/Sub tx-eventos' {
+      #streaming
+      technology 'Pub/Sub · esquema Avro · DLQ'
+      description 'Recibe cada transacción y la retiene 7 días.'
+      icon gcp:pub-sub
+    }
+    pubsubTel = contenedor 'Pub/Sub telemetria' {
+      #streaming
+      technology 'Pub/Sub + suscripción BigQuery'
+      description 'Escribe la telemetría en Bronze sin código.'
+      icon gcp:pub-sub
+    }
+    datastream = contenedor 'Datastream' {
+      #batch
+      technology 'CDC serverless'
+      description 'Copia los cambios de los cores al lake.'
+      icon gcp:datastream
+    }
+    transfer = contenedor 'Storage Transfer' {
+      #batch
+      technology 'Carga programada'
+      description 'PaySim histórico, feriados y archivos de las entidades.'
+      icon gcp:transfer
+    }
+    hub = contenedor 'Analytics Hub' {
+      #batch
+      technology 'Dataset enlazado'
+      description 'Lee EDI sin copiarlo y publica la señal de fraude.'
+      icon gcp:analytics-hub
+    }
+
+    // ---------------------------------------------------------- Procesamiento
+    dataflow = contenedor 'Dataflow' {
+      #streaming
+      technology 'Apache Beam · 1–8 workers'
+      description 'Dedup, estado por cliente y destino, 5 reglas y score.'
+      icon gcp:dataflow
+    }
+    dataproc = contenedor 'Dataproc Serverless' {
+      #batch
+      technology 'Apache Spark'
+      description 'Limpia y enriquece CSV crudo a Parquet curado.'
+      icon gcp:dataproc
+    }
+    sqlElt = contenedor 'BigQuery SQL' {
+      #batch
+      technology 'SQL / Dataform'
+      description 'Construye Gold y cruza con SEC, Trends y EDI.'
+      icon gcp:big-query
+    }
+    bqml = contenedor 'BigQuery ML' {
+      #batch
+      technology 'XGBoost · ARIMA_PLUS'
+      description 'Modelo de fraude y pronóstico de liquidez por distrito.'
+      icon gcp:vertex-ai
+    }
+    composer = contenedor 'Cloud Composer' {
+      technology 'Apache Airflow'
+      description 'Batch diario y precalentamiento de Dataflow.'
+      icon gcp:cloud-composer
+    }
+
+    // ---------------------------------------------------------- Almacenamiento
+    memorystore = almacen 'Memorystore' {
+      #streaming
+      technology 'Valkey / Redis'
+      description 'Features por cliente para decidir en menos de 150 ms.'
+      icon gcp:memorystore
+    }
+    lake = almacen 'Data Lake' {
+      #batch
+      technology 'Cloud Storage · Parquet / Iceberg'
+      description 'Zonas raw, curated y archive (WORM).'
+      icon gcp:cloud-storage
+    }
+    bronze = almacen 'BigQuery Bronze' {
+      technology 'telemetria_raw · feriados'
+      icon gcp:big-query
+    }
+    silver = almacen 'BigQuery Silver' {
+      technology 'transacciones batch + stream · alertas'
+      icon gcp:big-query
+    }
+    gold = almacen 'BigQuery Gold' {
+      technology 'Estrella: dim_* · fact_* · v_kpi_*'
+      icon gcp:big-query
+    }
+
+    // ---------------------------------------------------------- Exposición
+    alertas = expo 'Pub/Sub alertas-fraude' {
+      #streaming
+      technology 'Push al sistema de casos'
+      icon gcp:pub-sub
+    }
+    autorizacion = expo 'Servicio de autorización' {
+      #streaming
+      technology 'Cloud Run · 2–20 instancias'
+      description 'Decide cada transacción leyendo Memorystore.'
+      icon gcp:cloud-run
+    }
+    api = expo 'API de datos' {
+      technology 'Cloud Run · FastAPI · 0–3 instancias'
+      description 'Alertas, riesgo por cliente, liquidez y KPIs.'
+      icon gcp:cloud-run
+    }
+    looker = expo 'Looker Studio' {
+      technology 'BI Engine'
+      description 'Tableros sobre las vistas v_kpi_*.'
+      icon gcp:looker
+    }
+    vistas = expo 'Vistas por entidad' {
+      technology 'Vistas autorizadas + RLS'
+      description 'Filtra por entidad_id y tokeniza la PII.'
+      icon gcp:big-query
+    }
+    balanceador = expo 'Cloud Load Balancing' {
+      #redes
+      technology 'HTTPS global · Cloud Armor · API Gateway'
+      description 'Entrada única y failover a São Paulo.'
+      icon gcp:cloud-load-balancing
+    }
+
+    // ---------------------------------------------------------- Capas transversales
+    gobierno = control 'Gobierno de datos' {
+      #gobierno
+      description 'Catálogo, linaje, calidad, clasificación y contratos de datos.'
+      icon gcp:dataplex
+
+      dataplex = control 'Dataplex' {
+        technology 'Catálogo · linaje · data quality'
+        icon gcp:dataplex
+      }
+      catalogo = control 'Policy tags' {
+        technology 'PII_ALTA · PII_MEDIA'
+        icon gcp:data-catalog
+      }
+      contratos = control 'Contratos de datos' {
+        technology 'Esquema Avro en Pub/Sub · DLQ'
+        icon gcp:pub-sub
+      }
+    }
+    seguridad = control 'Seguridad' {
+      #seguridad
+      description 'Identidad, cifrado, privacidad y auditoría.'
+      icon gcp:security
+
+      iam = control 'IAM' {
+        technology 'Una cuenta de servicio por componente'
+        icon gcp:identity-and-access-management
+      }
+      kms = control 'Cloud KMS' {
+        technology 'CMEK · rotación 90 días'
+        icon gcp:key-management-service
+      }
+      dlp = control 'Sensitive Data Protection' {
+        technology 'Tokenización de PII'
+        icon gcp:data-loss-prevention-api
+      }
+      auditoria = control 'Cloud Audit Logs' {
+        technology 'Sink a BigQuery'
+        icon gcp:cloud-audit-logs
+      }
+      scc = control 'Security Command Center' {
+        technology 'Postura y amenazas'
+        icon gcp:security-command-center
+      }
+    }
+    redes = control 'Redes' {
+      #redes
+      description 'Aislamiento del cómputo y conectividad privada.'
+      icon gcp:virtual-private-cloud
+
+      vpc = control 'VPC lumina-vpc' {
+        technology 'Subred privada · Private Google Access'
+        icon gcp:virtual-private-cloud
+      }
+      vpcsc = control 'VPC Service Controls' {
+        technology 'Perímetro anti exfiltración'
+        icon gcp:access-context-manager
+      }
+      vpn = control 'Cloud VPN HA' {
+        technology 'Túneles hacia los cores'
+        icon gcp:cloud-vpn
+      }
+      armor = control 'Cloud Armor' {
+        technology 'WAF · límites de tasa'
+        icon gcp:cloud-armor
+      }
+      nat = control 'Cloud NAT' {
+        technology 'Salida controlada'
+        icon gcp:cloud-nat
+      }
+    }
+  }
+
+  // ------------------------------------------------------------ Relaciones: streaming
+  canales -> lumina.pubsubTx '1. publica la transacción' {
+    technology 'gRPC · TLS'
+  }
+  lumina.pubsubTx -> lumina.dataflow '2. entrega' {
+    technology 'pull · dedup event_id'
+  }
+  lumina.dataflow -> lumina.memorystore '3. actualiza features'
+  lumina.dataflow -> lumina.silver '4. escribe tx con score' {
+    technology 'Storage Write API'
+  }
+  lumina.dataflow -> lumina.alertas '5. publica alertas'
+  lumina.pubsubTx -> lumina.lake '6. archivo crudo' {
+    technology 'suscripción Cloud Storage'
+  }
+  terminales -> lumina.pubsubTel '7. telemetría'
+  lumina.pubsubTel -> lumina.bronze 'escribe directo'
+
+  // ------------------------------------------------------------ Relaciones: batch
+  cores -> lumina.datastream '8. CDC' {
+    technology 'Cloud VPN HA'
+  }
+  lumina.datastream -> lumina.lake 'landing raw'
+  lumina.transfer -> lumina.lake 'landing raw'
+  lumina.lake -> lumina.dataproc '9. CSV crudo'
+  lumina.dataproc -> lumina.lake 'Parquet curado'
+  lumina.lake -> lumina.silver '10. bq load'
+  publicos -> lumina.hub '11. datos externos'
+  lumina.hub -> lumina.sqlElt 'cruce SQL'
+  lumina.silver -> lumina.sqlElt '12. lee'
+  lumina.bronze -> lumina.sqlElt 'lee'
+  lumina.sqlElt -> lumina.gold 'MERGE por partición'
+  lumina.gold -> lumina.bqml '13. entrena'
+  lumina.bqml -> lumina.gold 'pronóstico T+1'
+  lumina.composer -> lumina.dataproc 'orquesta'
+  lumina.composer -> lumina.sqlElt 'orquesta'
+  lumina.composer -> lumina.dataflow 'precalienta'
+
+  // ------------------------------------------------------------ Relaciones: exposición
+  canales -> lumina.balanceador 'pide autorización' {
+    technology 'HTTPS · mTLS'
+  }
+  lumina.balanceador -> lumina.autorizacion 'enruta'
+  lumina.balanceador -> lumina.api 'enruta'
+  lumina.autorizacion -> lumina.memorystore '14. lee features' {
+    technology 'Direct VPC egress'
+  }
+  lumina.silver -> lumina.api '15. consultas'
+  lumina.gold -> lumina.api 'consultas'
+  lumina.gold -> lumina.looker '16. KPIs'
+  lumina.gold -> lumina.vistas '17. filtra'
+  lumina.alertas -> soc '18. alertas'
+  lumina.looker -> gerencia 'tableros'
+  lumina.vistas -> entidades 'datos propios'
+  lumina.api -> soc 'consultas de riesgo'
+
+  // ------------------------------------------------------------ Relaciones: capas transversales
+  lumina.gobierno.dataplex -> lumina.silver 'perfila y valida'
+  lumina.gobierno.dataplex -> lumina.gold 'linaje'
+  lumina.gobierno.catalogo -> lumina.silver 'clasifica columnas'
+  lumina.gobierno.contratos -> lumina.pubsubTx 'valida esquema'
+  lumina.seguridad.kms -> lumina.gold 'cifra (CMEK)'
+  lumina.seguridad.kms -> lumina.lake 'cifra archive'
+  lumina.seguridad.dlp -> lumina.vistas 'tokeniza PII'
+  lumina.seguridad.iam -> lumina.dataflow 'cuenta de servicio'
+  lumina.seguridad.auditoria -> lumina.gold 'registra accesos'
+  lumina.redes.vpc -> lumina.dataflow 'workers sin IP pública'
+  lumina.redes.vpc -> lumina.dataproc 'workers sin IP pública'
+  lumina.redes.vpc -> lumina.memorystore 'acceso privado'
+  lumina.redes.vpn -> lumina.datastream 'conectividad privada'
+  lumina.redes.armor -> lumina.balanceador 'protege'
+  lumina.redes.vpcsc -> lumina.gold 'perímetro'
+  lumina.redes.vpcsc -> lumina.lake 'perímetro'
+}
+
+views {
+  view contexto {
+    title 'C4 · Nivel 1: contexto del sistema'
+    include canales, soc, gerencia, entidades, cores, terminales, publicos, lumina
+    include
+      canales -> lumina with { title 'publica transacciones y pide autorización' },
+      cores -> lumina with { title 'envía cambios de saldos (CDC)' },
+      terminales -> lumina with { title 'envía telemetría' },
+      publicos -> lumina with { title 'SEC, Trends y EDI' },
+      lumina -> soc with { title 'alertas y consultas de riesgo' },
+      lumina -> gerencia with { title 'tableros e informes' },
+      lumina -> entidades with { title 'datos propios y señal de fraude' }
+    autoLayout LeftRight 160 90
+  }
+
+  view streaming of lumina {
+    title 'C4 · Nivel 2: camino streaming (fraude en tiempo real)'
+    group 'Ingesta' {
+      color green
+      opacity 12%
+      border dashed
+      include lumina.pubsubTx, lumina.pubsubTel
+    }
+    group 'Procesamiento' {
+      color blue
+      opacity 12%
+      border dashed
+      include lumina.dataflow
+    }
+    group 'Almacenamiento' {
+      color indigo
+      opacity 12%
+      border dashed
+      include lumina.memorystore, lumina.silver, lumina.bronze, lumina.lake
+    }
+    group 'Servicio y exposición' {
+      color amber
+      opacity 12%
+      border dashed
+      include lumina.balanceador, lumina.autorizacion, lumina.alertas
+    }
+    include canales, terminales, soc
+    exclude lumina.lake -> lumina.silver
+    autoLayout LeftRight 110 70
+  }
+
+  view batch of lumina {
+    title 'C4 · Nivel 2: camino batch, modelado y exposición'
+    group 'Ingesta' {
+      color green
+      opacity 12%
+      border dashed
+      include lumina.datastream, lumina.transfer, lumina.hub
+    }
+    group 'Procesamiento' {
+      color blue
+      opacity 12%
+      border dashed
+      include lumina.dataproc, lumina.sqlElt, lumina.bqml, lumina.composer
+    }
+    group 'Almacenamiento' {
+      color indigo
+      opacity 12%
+      border dashed
+      include lumina.lake, lumina.silver, lumina.gold
+    }
+    group 'Servicio y exposición' {
+      color amber
+      opacity 12%
+      border dashed
+      include lumina.api, lumina.looker, lumina.vistas
+    }
+    include cores, publicos, gerencia, entidades, soc
+    exclude lumina.composer -> lumina.dataflow
+    autoLayout LeftRight 110 60
+  }
+
+  view gobierno of lumina {
+    title 'C4 · Capa de gobierno de datos'
+    include lumina.gobierno, lumina.gobierno.*, lumina.pubsubTx, lumina.silver, lumina.gold
+    exclude lumina.pubsubTx -> *, lumina.silver -> *, lumina.gold -> *
+    autoLayout TopBottom 60 120
+  }
+
+  view seguridad of lumina {
+    title 'C4 · Capa de seguridad'
+    include lumina.seguridad, lumina.seguridad.*, lumina.gold, lumina.lake, lumina.vistas, lumina.dataflow
+    exclude lumina.gold -> *, lumina.lake -> *, lumina.dataflow -> *
+    autoLayout TopBottom 60 120
+  }
+
+  view redes of lumina {
+    title 'C4 · Capa de redes'
+    include lumina.redes, lumina.redes.*, lumina.dataflow, lumina.dataproc, lumina.memorystore,
+      lumina.datastream, lumina.balanceador, lumina.gold, lumina.lake
+    exclude lumina.dataflow -> *, lumina.dataproc -> *, lumina.datastream -> *, lumina.balanceador -> *,
+      lumina.gold -> *, lumina.lake -> *
+    autoLayout TopBottom 60 120
+  }
+}

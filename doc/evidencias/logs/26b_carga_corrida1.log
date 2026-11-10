@@ -1,0 +1,30 @@
+$ bq query --use_legacy_sql=false --format=pretty --max_rows=40 'SELECT TIMESTAMP_TRUNC(decision_ts, MINUTE) AS minuto, COUNT(*) AS eventos, ROUND(COUNT(*)/60,1) AS ev_por_s, APPROX_QUANTILES(latencia_ms,100)[OFFSET(50)] AS p50_ms, APPROX_QUANTILES(latencia_ms,100)[OFFSET(95)] AS p95_ms FROM lumina_silver.transacciones_stream WHERE event_ts >= "2026-11-10 04:18:00" GROUP BY 1 ORDER BY 1'; echo; gcloud logging read 'resource.type=dataflow_step AND resource.labels.job_id=2026-11-09_20_05_40-16619663328803287800 AND jsonPayload.message:"Retrieving state"' --limit 2 --format='value(timestamp,jsonPayload.message)' --freshness=1h | cut -c1-200
+# proyecto: lumina-bank-utec · 2026-11-09 23:37:15 -05
+
++---------------------+---------+----------+--------+--------+
+|       minuto        | eventos | ev_por_s | p50_ms | p95_ms |
++---------------------+---------+----------+--------+--------+
+| 2026-11-10 04:19:00 |    1992 |     33.2 |  11626 |  20472 |
+| 2026-11-10 04:20:00 |    3835 |     63.9 |  29052 |  46344 |
+| 2026-11-10 04:21:00 |    4000 |     66.7 |  56396 |  71300 |
+| 2026-11-10 04:22:00 |    3985 |     66.4 |  69858 |  91715 |
+| 2026-11-10 04:23:00 |    4192 |     69.9 |  99792 | 117639 |
+| 2026-11-10 04:24:00 |    3646 |     60.8 |  50586 |  89004 |
+| 2026-11-10 04:25:00 |    4406 |     73.4 | 102309 | 136512 |
+| 2026-11-10 04:26:00 |    4200 |     70.0 | 135142 | 194430 |
+| 2026-11-10 04:27:00 |    4154 |     69.2 | 193670 | 247971 |
+| 2026-11-10 04:28:00 |    5024 |     83.7 | 246393 | 287362 |
+| 2026-11-10 04:29:00 |    2239 |     37.3 | 282463 | 301425 |
+| 2026-11-10 04:30:00 |    4523 |     75.4 | 363045 | 412876 |
+| 2026-11-10 04:31:00 |    8615 |    143.6 | 392822 | 431698 |
+| 2026-11-10 04:32:00 |    7186 |    119.8 | 417175 | 445857 |
+| 2026-11-10 04:33:00 |     154 |      2.6 | 464582 | 483128 |
+| 2026-11-10 04:34:00 |       4 |      0.1 | 499941 | 531190 |
++---------------------+---------+----------+--------+--------+
+
+2026-11-10T04:36:47.191586017Z	Retrieving state 64431 times costed 1920 seconds. It may be due to insufficient state cache size and/or frequent direct access of states.
+Consider adding '--max_cache_memory_usage_mb' pipeline option to increase state cache size or switch to materialized (pvalue.AsList) side input if applicable.
+2026-11-10T04:36:20.257355213Z	Retrieving state 60607 times costed 1920 seconds. It may be due to insufficient state cache size and/or frequent direct access of states.
+Consider adding '--max_cache_memory_usage_mb' pipeline option to increase state cache size or switch to materialized (pvalue.AsList) side input if applicable.
+
+# código de salida: 0

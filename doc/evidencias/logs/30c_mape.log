@@ -1,0 +1,17 @@
+$ bq query --use_legacy_sql=false --format=pretty 'SELECT distrito_id, ROUND(AVG(ape)*100,1) AS mape_pct, ROUND(AVG(IF(fecha < "2026-07-31", ape, NULL))*100,1) AS mape_sin_31_jul_pct FROM lumina_ml.eval_liquidez_diaria GROUP BY 1 ORDER BY 1'
+# proyecto: lumina-bank-utec · 2026-11-09 23:39:05 -05
+
++-------------+----------+---------------------+
+| distrito_id | mape_pct | mape_sin_31_jul_pct |
++-------------+----------+---------------------+
+|           1 |    263.6 |                58.7 |
+|           2 |    178.4 |                50.9 |
+|           3 |     70.0 |                59.0 |
+|           4 |    147.5 |                41.8 |
+|           5 |    154.5 |                41.3 |
+|           6 |    127.3 |                42.0 |
+|           7 |     95.6 |                32.1 |
+|           8 |    815.8 |               228.2 |
++-------------+----------+---------------------+
+
+# código de salida: 0

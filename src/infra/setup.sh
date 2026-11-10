@@ -39,7 +39,7 @@ gcloud storage buckets update "gs://${PROJECT_ID}-lumina-archive" --lifecycle-fi
 echo "==> Cuenta de servicio de pipelines (mínimo privilegio)"
 gcloud iam service-accounts create "$SA_NAME" --display-name="Lumina pipelines" 2>/dev/null || true
 for rol in roles/dataflow.worker roles/dataproc.worker roles/bigquery.dataEditor roles/bigquery.jobUser \
-           roles/pubsub.subscriber roles/pubsub.publisher roles/storage.objectAdmin; do
+           roles/pubsub.subscriber roles/pubsub.publisher roles/pubsub.viewer roles/storage.objectAdmin; do
   gcloud projects add-iam-policy-binding "$PROJECT_ID" --member="serviceAccount:${SA}" --role="$rol" \
     --condition=None --quiet >/dev/null
 done

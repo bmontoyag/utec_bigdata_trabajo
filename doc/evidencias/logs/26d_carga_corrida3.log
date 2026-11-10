@@ -1,0 +1,14 @@
+$ bq query --use_legacy_sql=false --format=pretty 'SELECT TIMESTAMP_TRUNC(decision_ts, MINUTE) AS minuto, COUNT(*) AS eventos, ROUND(COUNT(*)/60,1) AS ev_por_s, APPROX_QUANTILES(latencia_ms,100)[OFFSET(50)] AS p50_ms, APPROX_QUANTILES(latencia_ms,100)[OFFSET(95)] AS p95_ms FROM lumina_silver.transacciones_stream WHERE event_ts >= "2026-11-10 04:58:00" GROUP BY 1 ORDER BY 1'
+# proyecto: lumina-bank-utec · 2026-11-10 00:22:08 -05
+
++---------------------+---------+----------+--------+--------+
+|       minuto        | eventos | ev_por_s | p50_ms | p95_ms |
++---------------------+---------+----------+--------+--------+
+| 2026-11-10 04:59:00 |     299 |      5.0 |    578 |   2370 |
+| 2026-11-10 05:07:00 |    1478 |     24.6 |   7622 |  14265 |
+| 2026-11-10 05:08:00 |    4692 |     78.2 |  19873 |  35624 |
+| 2026-11-10 05:09:00 |    5330 |     88.8 |  27752 |  48346 |
+| 2026-11-10 05:10:00 |    1544 |     25.7 |  34155 |  53706 |
++---------------------+---------+----------+--------+--------+
+
+# código de salida: 0

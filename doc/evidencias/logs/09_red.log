@@ -1,0 +1,15 @@
+$ gcloud compute networks subnets describe lumina-datos-us-central1 --region us-central1 --format='yaml(name,network.basename(),ipCidrRange,privateIpGoogleAccess,logConfig.enable)'; echo; gcloud compute firewall-rules list --filter='network:lumina-vpc' --format='table(name,direction,sourceRanges.list(),allowed[].map().firewall_rule().list())'
+# proyecto: lumina-bank-utec · 2026-11-09 23:39:24 -05
+
+ipCidrRange: 10.10.0.0/20
+logConfig:
+  enable: true
+name: lumina-datos-us-central1
+network: lumina-vpc
+privateIpGoogleAccess: true
+
+NAME            DIRECTION  SOURCE_RANGES    ALLOW
+lumina-iap-ssh  INGRESS    35.235.240.0/20  tcp:22
+lumina-interno  INGRESS    10.10.0.0/20     tcp,udp,icmp
+
+# código de salida: 0

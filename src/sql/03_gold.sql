@@ -5,7 +5,7 @@
 
 DECLARE ultima_trends DATE DEFAULT (
   SELECT MAX(refresh_date) FROM `bigquery-public-data.google_trends.international_top_terms`
-  WHERE refresh_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY) AND country_code = 'PE'
+  WHERE refresh_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY) AND country_code = 'CO'  -- proxy: Perú no está en el dataset
 );
 
 -- ---------------------------------------------------------------- Hechos
@@ -60,15 +60,15 @@ CREATE OR REPLACE TABLE `PROJECT_ID.lumina_gold.fact_tendencias_semana` AS
 SELECT d.distrito_id, t.week AS semana,
        COUNT(*) AS terminos_top,
        COUNTIF(REGEXP_CONTAINS(LOWER(t.term),
-         r'banco|pr[eé]stamo|cr[eé]dito|bono|afp|cts|tarjeta|yape|plin|retiro|gratificaci|bcp|bbva|interbank|scotiabank|sunat|d[oó]lar')) AS terminos_financieros,
+         r'banco|pr[eé]stamo|cr[eé]dito|bono|afp|cts|tarjeta|yape|plin|retiro|gratificaci|bcp|bbva|interbank|scotiabank|sunat|d[oó]lar|nequi|daviplata|bancolombia|davivienda|subsidio|prima|dian')) AS terminos_financieros,
        AVG(t.score) AS score_promedio,
        ARRAY_AGG(IF(REGEXP_CONTAINS(LOWER(t.term),
-         r'banco|pr[eé]stamo|cr[eé]dito|bono|afp|cts|tarjeta|yape|plin|retiro|gratificaci|bcp|bbva|interbank|scotiabank|sunat|d[oó]lar'),
+         r'banco|pr[eé]stamo|cr[eé]dito|bono|afp|cts|tarjeta|yape|plin|retiro|gratificaci|bcp|bbva|interbank|scotiabank|sunat|d[oó]lar|nequi|daviplata|bancolombia|davivienda|subsidio|prima|dian'),
          t.term, NULL) IGNORE NULLS LIMIT 10) AS ejemplos_financieros
 FROM `bigquery-public-data.google_trends.international_top_terms` t
 JOIN `PROJECT_ID.lumina_gold.dim_distrito` d
   ON t.region_name = d.region_trends
-WHERE t.refresh_date = ultima_trends AND t.country_code = 'PE'
+WHERE t.refresh_date = ultima_trends AND t.country_code = 'CO'
 GROUP BY 1, 2;
 
 -- SEC: estados financieros de bancos comerciales (benchmark del sector) y proxies de las 12 entidades

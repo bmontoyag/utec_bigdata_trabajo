@@ -1,0 +1,22 @@
+$ gcloud storage buckets describe gs://lumina-bank-utec-lumina-archive --format="yaml(lifecycle_config)"
+# proyecto: lumina-bank-utec · 2026-11-09 22:53:13 -05
+
+lifecycle_config:
+  rule:
+  - action:
+      storageClass: NEARLINE
+      type: SetStorageClass
+    condition:
+      age: 30
+  - action:
+      storageClass: COLDLINE
+      type: SetStorageClass
+    condition:
+      age: 90
+  - action:
+      storageClass: ARCHIVE
+      type: SetStorageClass
+    condition:
+      age: 365
+
+# código de salida: 0
