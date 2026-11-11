@@ -1,5 +1,5 @@
-$ bq query --use_legacy_sql=false --format=pretty --max_rows=30 'SELECT * FROM lumina_ml.eval_liquidez_diaria ORDER BY 1 LIMIT 10'; bq query --use_legacy_sql=false --format=pretty --max_rows=30 'SELECT * FROM lumina_gold.v_plan_liquidez_t1 ORDER BY distrito_id, fecha LIMIT 10'
-# proyecto: lumina-bank-utec · 2026-11-09 23:38:25 -05
+$ bq query --use_legacy_sql=false --format=pretty --max_rows=30 'SELECT * FROM lumina_ml.eval_liquidez_diaria ORDER BY 1 LIMIT 10'; bq query --use_legacy_sql=false --format=pretty --max_rows=30 'SELECT * FROM lumina_gold.v_plan_liquidez_t1 ORDER BY distrito_id, fecha'
+# proyecto: lumina-bank-utec · 2026-11-10 23:32:33 -05
 
 +-------------+------------+----------------------+----------------------+---------------------+
 | distrito_id |   fecha    |     real_salidas     |      pronostico      |         ape         |
@@ -18,16 +18,14 @@ $ bq query --use_legacy_sql=false --format=pretty --max_rows=30 'SELECT * FROM l
 +-------------+-------------------+------------+-------------------+----------------------+
 | distrito_id |     distrito      |   fecha    | efectivo_esperado | efectivo_recomendado |
 +-------------+-------------------+------------+-------------------+----------------------+
-|           1 | Centro Financiero | 2026-07-28 |    1.6526923094E8 |      1.76392876705E9 |
-|           1 | Centro Financiero | 2026-07-29 |    1.6850471593E8 |      3.09194456578E9 |
-|           1 | Centro Financiero | 2026-07-30 |    1.6927208388E8 |      3.94989032369E9 |
-|           1 | Centro Financiero | 2026-07-31 |    1.7003945183E8 |      4.64450028478E9 |
-|           1 | Centro Financiero | 2026-08-01 |    1.7080681978E8 |      5.24450383701E9 |
-|           1 | Centro Financiero | 2026-08-02 |    1.7157418773E8 |      5.78060630576E9 |
-|           1 | Centro Financiero | 2026-08-03 |    1.7234155568E8 |      6.26976716273E9 |
-|           1 | Centro Financiero | 2026-08-04 |     1.875594257E7 |       2.8284810731E8 |
-|           2 | Norte Digital     | 2026-07-28 |    1.7024603788E8 |      1.22522293585E9 |
-|           2 | Norte Digital     | 2026-07-29 |    1.6883595114E8 |      1.38345810817E9 |
+|           1 | Centro Financiero | 2026-07-28 |    1.6953881354E8 |       5.1747293882E8 |
+|           2 | Norte Digital     | 2026-07-28 |    1.7644250595E8 |       3.9800748264E8 |
+|           3 | Sur Residencial   | 2026-07-28 |     8.020945169E7 |       4.7637146145E8 |
+|           4 | Este Industrial   | 2026-07-28 |    1.6154720078E8 |       5.5113985477E8 |
+|           5 | Oeste Portuario   | 2026-07-28 |    1.6657433252E8 |       5.3498158502E8 |
+|           6 | Valle Comercial   | 2026-07-28 |    1.4886444125E8 |       5.3120827635E8 |
+|           7 | Altos Residencial | 2026-07-28 |    1.3431561441E8 |       4.9303832284E8 |
+|           8 | Bahía Empresarial | 2026-07-28 |     3.048064353E7 |       2.4632729126E8 |
 +-------------+-------------------+------------+-------------------+----------------------+
 
 # código de salida: 0

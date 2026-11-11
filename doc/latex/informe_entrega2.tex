@@ -492,7 +492,7 @@ Los conteos del camino streaming cambian entre figuras porque \cod{transacciones
 
 El pronóstico de liquidez (ARIMA\_PLUS por distrito) no alcanza la meta de un error menor al 15 \%. Con los cuatro días de evaluación, el MAPE diario va de 70 \% a 816 \% según el distrito. Si se excluye el 31 de julio baja a entre 32 \% y 59 \% en siete distritos y queda en 228 \% en el octavo (figura~\ref{fig:mape}). Ninguna de las dos lecturas cumple la meta. La causa está en los datos: en sus últimos días PaySim casi no tiene movimiento (282 transacciones el 31 de julio frente a unas 50\,000 en un día típico), y esos son justamente los días reservados para evaluar. Con un año de datos reales el modelo podrá aprender la estacionalidad semanal y mensual; con 27 días no puede.
 
-La vista \cod{v\_plan\_liquidez\_t1} tenía un error que muestra la figura~\ref{fig:liquidez}: el efectivo recomendado salía entre 10 y 36 veces el esperado y crecía cada día. Calculábamos el recomendado sumando las 24 cotas superiores horarias al 90 \%, y la suma de esos cuantiles no es el cuantil del total del día. Además la vista devolvía los 7 días del horizonte, y el intervalo de ARIMA se ensancha con cada hora que se aleja. La corregimos: ahora devuelve solo el primer día pronosticado (T+1) y suma al esperado un margen igual a la raíz de la suma de los cuadrados de los márgenes horarios, suponiendo errores horarios independientes. La captura de la figura~\ref{fig:liquidez} es anterior a la corrección.
+La vista \cod{v\_plan\_liquidez\_t1} tenía un error que muestra la figura~\ref{fig:liquidez}: el efectivo recomendado salía entre 10 y 36 veces el esperado y crecía cada día. Calculábamos el recomendado sumando las 24 cotas superiores horarias al 90 \%, y la suma de esos cuantiles no es el cuantil del total del día. Además la vista devolvía los 7 días del horizonte, y el intervalo de ARIMA se ensancha con cada hora que se aleja. La corregimos: ahora devuelve solo el primer día pronosticado (T+1), recorta a cero las horas en que ARIMA pronostica salidas negativas y suma al esperado un margen igual a la raíz de la suma de los cuadrados de los márgenes horarios, suponiendo errores horarios independientes. Con la vista corregida (figura~\ref{fig:liquidez}) el recomendado queda entre 2,3 y 3,7 veces el esperado en seis distritos, 5,9 en Sur Residencial y 8,1 en Bahía Empresarial, donde el pronóstico horario cae a cero en 15 de las 23 horas. Es holgado porque el intervalo horario de un modelo entrenado con 27 días es ancho, y aun así no basta en todos lados: cubre el día de pago del 29 de julio en siete distritos (por ejemplo, 396 millones reales frente a 517 recomendados en el Centro Financiero), pero no en Bahía Empresarial (410 frente a 246). Con un año de datos o con un modelo diario el margen se estrechará.
 
 \subsection{API de datos}
 
@@ -562,7 +562,7 @@ Todas las capturas son salidas reales de \cod{gcloud} y \cod{bq} ejecutadas sobr
 \evid{29b_reglas.png}{Desempeño de las reglas del pipeline e ingreso por producto}{reglas}
 \evid{30a_bqml.png}{Entrenamiento de los modelos de fraude y liquidez}{bqml}
 \evid{30_bqml_eval.png}{Evaluación del modelo de fraude y variables más importantes}{bqmleval}
-\evid{30b_liquidez.png}{Error del pronóstico por día y plan de liquidez por distrito, antes de corregir \cod{v\_plan\_liquidez\_t1}: el recomendado suma cotas horarias y por eso sale inflado}{liquidez}
+\evid{30b_liquidez.png}{Error del pronóstico por día y plan de liquidez T+1 por distrito con la vista \cod{v\_plan\_liquidez\_t1} corregida}{liquidez}
 \evid{30d_bqml_sin_fuga.png}{Modelo de fraude con y sin las variables posteriores a la transacción, y variables más importantes del modelo sin fuga}{sinfuga}
 \evid{30c_mape.png}{MAPE del pronóstico por distrito, con y sin el último día de PaySim}{mape}
 
@@ -572,7 +572,7 @@ Todas las capturas son salidas reales de \cod{gcloud} y \cod{bq} ejecutadas sobr
 \evid{31b_cloud_run_config.png}{Configuración desplegada: máximo de 3 instancias, concurrencia 20, 1 vCPU y 512 MiB. La URL \cod{lumina-api-gk5x4vgopq-uc.a.run.app} y la de la figura~\ref{fig:deploy}, basada en el número de proyecto, son dos alias que Cloud Run da a la misma revisión \cod{lumina-api-00001-6zb}}{cloudrun}
 \evid{consola/cloud_run.png}{Métricas de \cod{lumina-api} en Cloud Run: solicitudes 2xx y 4xx, latencia e instancias que vuelven a cero cuando no hay tráfico}{c-cloudrun}
 \evid{32_api_sin_token.png}{Sin credenciales la API responde 403}{apisintoken}
-\evid{33_api.png}{Con token, la API devuelve las alertas recientes y el pronóstico de liquidez}{api}
+\evid{33_api.png}{Con token, la API devuelve la alerta más reciente y el plan de liquidez T+1 del distrito 1}{api}
 
 
 % ====================================================================== 7
@@ -592,7 +592,6 @@ Todas las capturas son salidas reales de \cod{gcloud} y \cod{bq} ejecutadas sobr
 \item Asignar los policy tags a las columnas sensibles (\cod{cliente\_id} y saldos como \cod{PII\_ALTA}; \cod{lat}, \cod{lon} y \cod{device\_id} como \cod{PII\_MEDIA}) y mostrarlo con \cod{bq show --schema}.
 \item Lanzar Dataproc Serverless en \cod{lumina-vpc} con \cod{--subnet lumina-datos-us-central1}.
 \item Crear el esquema de Pub/Sub de \cod{tx-eventos} y dejar en Dataflow solo las reglas de dominio.
-\item Volver a capturar el plan de liquidez con la vista corregida.
 \item Poner el balanceador con Cloud Armor delante de la API y cerrar el acceso directo a su URL.
 \item Pasar la normalización de PaySim al ETL de Spark.
 \item Preparar la demo de punta a punta: simulador, Pub/Sub, Dataflow, alerta, API y tablero.
