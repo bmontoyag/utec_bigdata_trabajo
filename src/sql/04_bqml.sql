@@ -122,12 +122,21 @@ SELECT distrito_id, forecast_timestamp AS hora,
        prediction_interval_upper_bound AS cota_superior
 FROM ML.FORECAST(MODEL `PROJECT_ID.lumina_ml.modelo_liquidez`, STRUCT(168 AS horizon, 0.9 AS confidence_level));
 
+-- Solo el primer día pronosticado (T+1): el intervalo de ARIMA se ensancha con el horizonte.
+-- Sumar las cotas horarias no da la cota del día; el margen diario se agrega como raíz de la suma
+-- de los cuadrados de los márgenes horarios (errores horarios supuestos independientes).
 CREATE OR REPLACE VIEW `PROJECT_ID.lumina_gold.v_plan_liquidez_t1` AS
+WITH p AS (
+  SELECT *, MIN(DATE(hora)) OVER () AS primer_dia
+  FROM `PROJECT_ID.lumina_ml.pronostico_liquidez`
+)
 SELECT p.distrito_id, d.nombre AS distrito, DATE(p.hora) AS fecha,
        ROUND(SUM(p.salidas_pronosticadas), 2) AS efectivo_esperado,
-       ROUND(SUM(p.cota_superior), 2) AS efectivo_recomendado
-FROM `PROJECT_ID.lumina_ml.pronostico_liquidez` p
+       ROUND(SUM(p.salidas_pronosticadas)
+             + SQRT(SUM(POW(p.cota_superior - p.salidas_pronosticadas, 2))), 2) AS efectivo_recomendado
+FROM p
 JOIN `PROJECT_ID.lumina_gold.dim_distrito` d USING (distrito_id)
+WHERE DATE(p.hora) = p.primer_dia
 GROUP BY 1, 2, 3;
 
 -- ---------------------------------------------------------------- Fraude sin fuga de información
