@@ -19,7 +19,7 @@ from airflow.sensors.time_delta import TimeDeltaSensor
 PROJECT_ID = Variable.get("lumina_project_id")
 REGION = Variable.get("lumina_region", default_var="us-central1")
 JOB = Variable.get("lumina_dataflow_job", default_var="lumina-fraude-stream")
-MIN_NORMAL, MIN_PICO, MAX_WORKERS = 4, 20, 40  # fase MVP, medido en la Entrega 2 (§4.2)
+MIN_NORMAL, MIN_PICO, MAX_WORKERS = 4, 20, 55  # fase MVP: 55 ev/s por worker en la VPC privada (§4.2)
 
 
 def es_dia_de_pico(ds: str) -> bool:

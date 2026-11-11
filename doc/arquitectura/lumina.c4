@@ -74,7 +74,7 @@ model {
     description 'Envían telemetría cada 30 s.'
   }
   publicos = externo 'Datos públicos y de mercado' {
-    description 'SEC Financials, Google Trends y EDI (Analytics Hub).'
+    description 'SEC Financials, Google Trends y EDI (BigQuery sharing).'
   }
 
   lumina = sistema 'Plataforma de datos Lumina' {
@@ -105,9 +105,9 @@ model {
       description 'PaySim histórico, feriados y archivos de las entidades.'
       icon gcp:transfer
     }
-    hub = contenedor 'Analytics Hub' {
+    hub = contenedor 'BigQuery sharing' {
       #batch
-      technology 'Dataset enlazado'
+      technology 'Antes Analytics Hub · dataset enlazado'
       description 'Lee EDI sin copiarlo y publica la señal de fraude.'
       icon gcp:analytics-hub
     }
@@ -115,7 +115,7 @@ model {
     // ---------------------------------------------------------- Procesamiento
     dataflow = contenedor 'Dataflow' {
       #streaming
-      technology 'Apache Beam · 1–8 workers'
+      technology 'Apache Beam · 4–55 workers (MVP)'
       description 'Dedup, estado por cliente y destino, 5 reglas y score.'
       icon gcp:dataflow
     }
@@ -137,8 +137,8 @@ model {
       description 'Modelo de fraude y pronóstico de liquidez por distrito.'
       icon gcp:vertex-ai
     }
-    composer = contenedor 'Cloud Composer' {
-      technology 'Apache Airflow'
+    composer = contenedor 'Managed Service for Apache Airflow' {
+      technology 'Antes Cloud Composer'
       description 'Batch diario y precalentamiento de Dataflow.'
       icon gcp:cloud-composer
     }
@@ -209,12 +209,12 @@ model {
       description 'Catálogo, linaje, calidad, clasificación y contratos de datos.'
       icon gcp:dataplex
 
-      dataplex = control 'Dataplex' {
-        technology 'Catálogo · linaje · data quality'
+      dataplex = control 'Knowledge Catalog' {
+        technology 'Antes Dataplex · catálogo, linaje y calidad'
         icon gcp:dataplex
       }
       catalogo = control 'Policy tags' {
-        technology 'PII_ALTA · PII_MEDIA'
+        technology 'Viven en BigQuery · PII_ALTA · PII_MEDIA'
         icon gcp:data-catalog
       }
       contratos = control 'Contratos de datos' {
@@ -256,10 +256,6 @@ model {
       vpc = control 'VPC lumina-vpc' {
         technology 'Subred privada · Private Google Access'
         icon gcp:virtual-private-cloud
-      }
-      vpcsc = control 'VPC Service Controls' {
-        technology 'Perímetro anti exfiltración'
-        icon gcp:access-context-manager
       }
       vpn = control 'Cloud VPN HA' {
         technology 'Túneles hacia los cores'
@@ -347,8 +343,6 @@ model {
   lumina.redes.vpc -> lumina.memorystore 'acceso privado'
   lumina.redes.vpn -> lumina.datastream 'conectividad privada'
   lumina.redes.armor -> lumina.balanceador 'protege'
-  lumina.redes.vpcsc -> lumina.gold 'perímetro'
-  lumina.redes.vpcsc -> lumina.lake 'perímetro'
 }
 
 views {
@@ -443,11 +437,27 @@ views {
   }
 
   view redes of lumina {
-    title 'C4 · Capa de redes'
-    include lumina.redes, lumina.redes.*, lumina.dataflow, lumina.dataproc, lumina.memorystore,
-      lumina.datastream, lumina.balanceador, lumina.gold, lumina.lake
+    title 'C4 · Capa de redes: el perímetro de VPC Service Controls se define en la organización y agrupa proyectos'
+    include lumina.redes, lumina.redes.*, lumina.datastream, lumina.balanceador
+    group 'Organización lumina · perímetro VPC Service Controls' {
+      color red
+      opacity 6%
+      border dashed
+      group 'Proyecto de datos de alta confianza (PII, Gold)' {
+        color red
+        opacity 8%
+        border dashed
+        include lumina.gold, lumina.silver
+      }
+      group 'Proyecto de procesamiento' {
+        color blue
+        opacity 8%
+        border dashed
+        include lumina.dataflow, lumina.dataproc, lumina.memorystore, lumina.lake
+      }
+    }
     exclude lumina.dataflow -> *, lumina.dataproc -> *, lumina.datastream -> *, lumina.balanceador -> *,
-      lumina.gold -> *, lumina.lake -> *
+      lumina.gold -> *, lumina.lake -> *, lumina.silver -> *
     autoLayout TopBottom 60 120
   }
 }

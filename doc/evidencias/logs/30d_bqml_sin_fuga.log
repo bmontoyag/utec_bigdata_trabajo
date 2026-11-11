@@ -1,0 +1,22 @@
+$ bq query --use_legacy_sql=false --format=pretty 'SELECT "con saldos posteriores" AS modelo, ROUND(precision,4) AS precision, ROUND(recall,4) AS recall, ROUND(roc_auc,4) AS roc_auc FROM ML.EVALUATE(MODEL lumina_ml.modelo_fraude, TABLE lumina_ml.v_eval_fraude, STRUCT(0.5 AS threshold)) UNION ALL SELECT "solo datos previos", ROUND(precision,4), ROUND(recall,4), ROUND(roc_auc,4) FROM ML.EVALUATE(MODEL lumina_ml.modelo_fraude_pre, TABLE lumina_ml.v_eval_fraude_pre, STRUCT(0.5 AS threshold))' ; bq query --use_legacy_sql=false --format=pretty 'SELECT feature, ROUND(attribution,4) AS importancia FROM ML.GLOBAL_EXPLAIN(MODEL lumina_ml.modelo_fraude_pre) ORDER BY attribution DESC'
+# proyecto: lumina-bank-utec · 2026-11-10 22:58:18 -05
+
+Waiting on bqjob_r572eb6153fedbd7f_000001a1c8c1afe6_1 ... (0s) Current status: DONE   
++------------------------+-----------+--------+---------+
+|         modelo         | precision | recall | roc_auc |
++------------------------+-----------+--------+---------+
+| solo datos previos     |    0.8128 | 0.9941 |  0.9981 |
+| con saldos posteriores |    0.8107 | 0.9953 |  0.9977 |
++------------------------+-----------+--------+---------+
++------------------+-------------+
+|     feature      | importancia |
++------------------+-------------+
+| proporcion_saldo |      2.6538 |
+| saldo_ant_orig   |      0.2274 |
+| saldo_ant_dest   |      0.1699 |
+| hora_dia         |      0.0629 |
+| monto            |      0.0508 |
+| tipo             |      0.0122 |
++------------------+-------------+
+
+# código de salida: 0

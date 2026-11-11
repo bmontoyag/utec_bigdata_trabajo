@@ -55,6 +55,7 @@ ESCENARIOS = [("Promedio\n175 TPS", 175), ("Pico normal\n440 TPS", 440),
               ("Día de pago\n2,000 TPS", 2_000), ("Diseño\n5,000 TPS", 5_000)]
 UTIL = 0.70
 MEDIDO = 75          # ev/s sostenidos por worker en las pruebas (código actual en Python)
+MEDIDO_VPC = 55      # piso de la corrida 2, la única dentro de la VPC privada
 OBJETIVO = 500       # ev/s por worker que debe alcanzar la versión optimizada antes de producción
 RPS_INSTANCIA = 500 * 0.60
 
@@ -66,18 +67,21 @@ def workers(tps, capacidad):
 fig, (b1, b2) = plt.subplots(1, 2, figsize=(12.5, 4.5), dpi=200, gridspec_kw={"width_ratios": [1.25, 1]})
 etiquetas = [e for e, _ in ESCENARIOS]
 xs = range(len(ESCENARIOS))
+vpc = [workers(t, MEDIDO_VPC) for _, t in ESCENARIOS]
 med = [workers(t, MEDIDO) for _, t in ESCENARIOS]
 obj = [workers(t, OBJETIVO) for _, t in ESCENARIOS]
-ancho = 0.38
-b1.bar([x - ancho / 2 for x in xs], med, ancho, color=RED, zorder=3, label=f"código actual ({MEDIDO} ev/s por worker, medido)")
-b1.bar([x + ancho / 2 for x in xs], obj, ancho, color=BLUE, zorder=3, label=f"versión optimizada ({OBJETIVO} ev/s, objetivo)")
-for x, a, b in zip(xs, med, obj):
-    b1.text(x - ancho / 2, a + 2, str(a), ha="center", color=NAVY, fontweight="bold")
-    b1.text(x + ancho / 2, b + 2, str(b), ha="center", color=NAVY, fontweight="bold")
-b1.axhline(30, color=GRAY, ls="--", lw=1.2)
-b1.text(-0.45, 32, "máximo de la Entrega 1 (30, sin medir)", color=GRAY, fontsize=9)
+ancho = 0.27
+b1.bar([x - ancho for x in xs], vpc, ancho, color=ORANGE, zorder=3, label=f"código actual en VPC privada ({MEDIDO_VPC} ev/s, medido)")
+b1.bar(list(xs), med, ancho, color=RED, zorder=3, label=f"código actual ({MEDIDO} ev/s por worker, medido)")
+b1.bar([x + ancho for x in xs], obj, ancho, color=BLUE, zorder=3, label=f"versión optimizada ({OBJETIVO} ev/s, objetivo)")
+for x, v, a, b in zip(xs, vpc, med, obj):
+    b1.text(x - ancho, v + 2, str(v), ha="center", color=NAVY, fontweight="bold", fontsize=9)
+    b1.text(x, a + 2, str(a), ha="center", color=NAVY, fontweight="bold", fontsize=9)
+    b1.text(x + ancho, b + 2, str(b), ha="center", color=NAVY, fontweight="bold", fontsize=9)
+b1.axhline(55, color=ORANGE, lw=1.6)
+b1.text(-0.45, 57.5, "máximo MVP = 55", color="#B9741A", fontsize=9, fontweight="bold")
 b1.set_xticks(list(xs), etiquetas)
-b1.set_ylim(0, 115)
+b1.set_ylim(0, 150)
 b1.set_title("Dataflow: workers n2-standard-2 necesarios al 70 % de uso", loc="left", color=NAVY, fontweight="bold")
 b1.legend(frameon=False, loc="upper left", bbox_to_anchor=(0, 0.93))
 
@@ -94,5 +98,5 @@ for a in (b1, b2):
     a.grid(axis="y", color="#E3E9F2", zorder=0)
 fig.tight_layout()
 fig.savefig(AQUI / "dimensionamiento.png", bbox_inches="tight", facecolor="white")
-for (_, t), a, b, c in zip(ESCENARIOS, med, obj, inst):
-    print(f"{t:>5} TPS → Dataflow actual {a} · optimizado {b} · Cloud Run {c}")
+for (_, t), v, a, b, c in zip(ESCENARIOS, vpc, med, obj, inst):
+    print(f"{t:>5} TPS → Dataflow VPC {v} · actual {a} · optimizado {b} · Cloud Run {c}")

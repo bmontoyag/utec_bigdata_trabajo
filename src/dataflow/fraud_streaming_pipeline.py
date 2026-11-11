@@ -15,7 +15,8 @@ Ejecución en Dataflow (laboratorio):
 Dimensionamiento (informe de la Entrega 2, sección 4): solo tx-eventos pasa por este pipeline. En la prueba de
 carga un worker n2-standard-2 sostuvo ~75 ev/s con la CPU al 95 %; al 70 % de uso → ~50 ev/s por worker:
   175 TPS promedio → 4 workers · 2,000 TPS día de pago → 39 · 5,000 TPS diseño → 96
-  Fase MVP: --num_workers 4 --min_num_workers 4 --max_num_workers 40 (Composer sube el mínimo a 20 en días de pago).
+  Dentro de la VPC privada (corrida 2) el worker bajó a 55–63 ev/s: el día de pago pide hasta 52 workers.
+  Fase MVP: --num_workers 4 --min_num_workers 4 --max_num_workers 55 (Composer sube el mínimo a 20 en días de pago).
   Antes de producción el camino con estado se optimiza (objetivo 500 ev/s por worker → máximo 15) y se vuelve a medir.
 """
 import argparse

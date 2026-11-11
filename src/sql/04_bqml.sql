@@ -129,3 +129,37 @@ SELECT p.distrito_id, d.nombre AS distrito, DATE(p.hora) AS fecha,
 FROM `PROJECT_ID.lumina_ml.pronostico_liquidez` p
 JOIN `PROJECT_ID.lumina_gold.dim_distrito` d USING (distrito_id)
 GROUP BY 1, 2, 3;
+
+-- ---------------------------------------------------------------- Fraude sin fuga de información
+-- saldo_nuevo_* y err_saldo_* se conocen solo después de ejecutar la transacción: en la autorización no existen.
+-- Este modelo usa únicamente lo disponible al momento de decidir; es la cifra que vale para el caso de negocio.
+CREATE OR REPLACE MODEL `PROJECT_ID.lumina_ml.modelo_fraude_pre`
+OPTIONS (
+  model_type = 'BOOSTED_TREE_CLASSIFIER',
+  input_label_cols = ['is_fraud_label'],
+  auto_class_weights = TRUE,
+  max_iterations = 50,
+  enable_global_explain = TRUE
+) AS
+SELECT tipo,
+       CAST(monto AS FLOAT64) AS monto,
+       CAST(saldo_ant_orig AS FLOAT64) AS saldo_ant_orig,
+       CAST(saldo_ant_dest AS FLOAT64) AS saldo_ant_dest,
+       SAFE_DIVIDE(monto, saldo_ant_orig) AS proporcion_saldo,
+       MOD(step, 24) AS hora_dia,
+       is_fraud_label
+FROM `PROJECT_ID.lumina_silver.transacciones_batch`
+WHERE tipo IN ('TRANSFER', 'CASH_OUT')
+  AND MOD(ABS(FARM_FINGERPRINT(event_id)), 10) < 8
+  AND (is_fraud_label = 1 OR MOD(ABS(FARM_FINGERPRINT(CONCAT('s', event_id))), 10) = 0);
+
+CREATE OR REPLACE VIEW `PROJECT_ID.lumina_ml.v_eval_fraude_pre` AS
+SELECT tipo,
+       CAST(monto AS FLOAT64) AS monto,
+       CAST(saldo_ant_orig AS FLOAT64) AS saldo_ant_orig,
+       CAST(saldo_ant_dest AS FLOAT64) AS saldo_ant_dest,
+       SAFE_DIVIDE(monto, saldo_ant_orig) AS proporcion_saldo,
+       MOD(step, 24) AS hora_dia,
+       is_fraud_label
+FROM `PROJECT_ID.lumina_silver.transacciones_batch`
+WHERE tipo IN ('TRANSFER', 'CASH_OUT') AND MOD(ABS(FARM_FINGERPRINT(event_id)), 10) >= 8;

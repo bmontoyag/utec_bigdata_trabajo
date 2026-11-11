@@ -1,0 +1,25 @@
+$ bq query --use_legacy_sql=false --format=pretty 'SELECT decision, COUNT(*) AS n FROM lumina_silver.transacciones_stream WHERE ingest_ts BETWEEN "2026-11-10 04:08:00" AND "2026-11-10 04:15:00" GROUP BY ROLLUP(decision) ORDER BY n' ; bq query --use_legacy_sql=false --format=pretty 'SELECT origen, COUNT(*) AS filas, COUNT(DISTINCT event_id) AS event_id_distintos, MIN(fecha) AS desde, MAX(fecha) AS hasta FROM lumina_gold.fact_transacciones GROUP BY origen' ; bq query --use_legacy_sql=false --format=pretty 'SELECT COUNT(*) AS event_id_en_ambos_origenes FROM lumina_silver.transacciones_stream s JOIN lumina_silver.transacciones_batch b USING (event_id)'
+# proyecto: lumina-bank-utec · 2026-11-10 22:58:35 -05
+
++----------+-------+
+| decision |   n   |
++----------+-------+
+| BLOQUEAR |    50 |
+| REVISAR  |    80 |
+| APROBAR  | 29870 |
+| NULL     | 30000 |
++----------+-------+
+Waiting on bqjob_r2022ece8a02f85a6_000001a1c8c1fbeb_1 ... (0s) Current status: RUNNING                                                                                      Waiting on bqjob_r2022ece8a02f85a6_000001a1c8c1fbeb_1 ... (0s) Current status: DONE   
++--------+---------+--------------------+------------+------------+
+| origen |  filas  | event_id_distintos |   desde    |   hasta    |
++--------+---------+--------------------+------------+------------+
+| stream |  125274 |             125274 | 2026-11-10 | 2026-11-10 |
+| batch  | 6362620 |            6362620 | 2026-07-01 | 2026-07-31 |
++--------+---------+--------------------+------------+------------+
++----------------------------+
+| event_id_en_ambos_origenes |
++----------------------------+
+|                          0 |
++----------------------------+
+
+# código de salida: 0

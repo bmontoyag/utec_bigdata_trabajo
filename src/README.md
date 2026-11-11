@@ -4,12 +4,12 @@ Código de la plataforma descrita en `doc/Entrega 1 - Arquitectura Lumina Bank e
 
 ```
 infra/setup.sh                       APIs, buckets, IAM, Pub/Sub, datasets (ejecuta sql/01_ddl.sql)
-infra/gobierno_seguridad_red.sh      VPC privada, KMS (CMEK), auditoría, policy tags, Dataplex DQ, vistas por entidad
+infra/gobierno_seguridad_red.sh      VPC privada, KMS (CMEK), auditoría, policy tags, Knowledge Catalog DQ, vistas por entidad
 simulator/                           Productores de eventos (PaySim → tx-eventos, telemetría → telemetria)
 dataflow/fraud_streaming_pipeline.py Streaming: reglas de fraude con estado → BigQuery + alertas
 dataproc/batch_paysim_etl.py         Batch: CSV raw → Parquet curado (Spark)
 sql/01..06                           DDL, dimensiones, Gold/KPIs, BigQuery ML, gobierno, validación de capacidad
-orchestration/                       DAGs de Cloud Composer: batch diario y precalentamiento de Dataflow
+orchestration/                       DAGs de Managed Service for Apache Airflow (antes Cloud Composer): batch diario y precalentamiento de Dataflow
 api/                                 API en Cloud Run (FastAPI)
 ```
 
@@ -118,7 +118,7 @@ simultáneas → 2 instancias con concurrencia 20; el máximo de 3 deja margen y
 BigQuery (3 × 20 = 60). En producción `--min-instances 1`. El servicio de autorización (producción) usa
 `--concurrency 40 --min-instances 2 --max-instances 20 --no-cpu-throttling`.
 
-## 8. Orquestación (Composer)
+## 8. Orquestación (Managed Service for Apache Airflow, antes Composer)
 
 Copia `orchestration/*.py` y la carpeta `sql/` a `dags/` del entorno y define las variables de Airflow
 `lumina_project_id`, `lumina_region` y `lumina_dataflow_job`. Composer cuesta aprox. USD 0.5/h: créalo solo para la demo.
@@ -130,7 +130,7 @@ bash infra/gobierno_seguridad_red.sh
 ```
 Crea la VPC `lumina-vpc` con subred privada (Private Google Access), firewall interno, llave CMEK con rotación de 90 días
 (bucket archive y dataset Gold), sink de auditoría a `lumina_auditoria`, taxonomía de policy tags, escaneo de calidad de
-Dataplex y las vistas `v_transacciones_entidad` y `v_senal_fraude_compartida` (`sql/05_gobierno_seguridad.sql`).
+Knowledge Catalog (antes Dataplex) y las vistas `v_transacciones_entidad` y `v_senal_fraude_compartida` (`sql/05_gobierno_seguridad.sql`).
 
 Linaje: habilite `datalineage.googleapis.com` y lance el batch de Spark con
 `--properties spark.dataproc.lineage.enabled=true`. Para encadenar la carga a Silver, el SQL de Gold y el streaming

@@ -104,7 +104,9 @@
 % ====================================================================== 1
 \section{Qué cambiamos después de la Entrega 1}
 
-La revisión de la primera entrega nos dejó cuatro observaciones. Las atendimos todas y, además, desplegamos la plataforma completa en un proyecto de Google Cloud (\cod{lumina-bank-utec}) para medir en lugar de suponer. La tabla~\ref{tab:observaciones} resume cada cambio.
+La revisión de la primera entrega nos dejó cuatro observaciones. Las atendimos todas y, además, desplegamos en un proyecto de Google Cloud (\cod{lumina-bank-utec}) los caminos batch y streaming, la capa Gold, los modelos de BigQuery ML, la API y buena parte de las capas transversales, para medir en lugar de suponer. No es la plataforma completa: la tabla~\ref{tab:desplegado} indica qué quedó fuera y por qué.
+
+El laboratorio corre en \cod{us-central1} y en la multirregión US por costo y porque ahí están disponibles todos los servicios que usamos. El diseño sigue siendo el de la Entrega 1: región principal en Santiago (\cod{southamerica-west1}) y continuidad en São Paulo. Por eso los costos se calculan con precios de \cod{us-central1} y luego se ajustan a Santiago (sección~\ref{sec:costos}). La tabla~\ref{tab:observaciones} resume cada cambio.
 
 \begin{table}[H]
 \centering\small
@@ -115,7 +117,7 @@ La revisión de la primera entrega nos dejó cuatro observaciones. Las atendimos
 \textbf{Observación} & \textbf{Qué hicimos} & \textbf{Sección}\\
 \midrule
 Mostrar las conexiones entre componentes & Rehicimos la arquitectura en notación C4 con LikeC4: una vista de contexto, una por cada camino de datos y una por cada capa transversal. Cada flecha dice qué dato viaja y por qué canal. Numeramos 18 conexiones y las describimos en una tabla. & \ref{sec:arquitectura}\\
-\rowcolor{fila} Incluir gobierno de datos, seguridad y redes & Las tres capas tienen su propia vista C4 y además están desplegadas: VPC privada, llave KMS con rotación, policy tags, escaneo de calidad en Dataplex, vistas por entidad, auditoría y Dataflow sin IP pública. & \ref{sec:transversales}\\
+\rowcolor{fila} Incluir gobierno de datos, seguridad y redes & Las tres capas tienen su propia vista C4. En el laboratorio desplegamos la VPC privada, la llave KMS con rotación, los policy tags, el escaneo de calidad, el linaje, las vistas por entidad, la auditoría y Dataflow sin IP pública. VPC Service Controls, Cloud VPN y el balanceador con Cloud Armor quedan diseñados; la tabla~\ref{tab:desplegado} dice por qué. & \ref{sec:transversales}\\
 Cloud Run sobredimensionado & Lo recalculamos con la ley de Little sobre el volumen real. El servicio de autorización pasa de 2–100 a 2–20 instancias y la API de datos, de 2–100 a 0–3. & \ref{sec:cloudrun}\\
 \rowcolor{fila} Dimensionar y validar Dataflow & Hicimos tres pruebas de carga con un worker fijo. La capacidad real resultó muy por debajo de lo que suponíamos; con ese dato fijamos el rango de workers de la fase MVP y una meta de optimización para producción. & \ref{sec:dataflow}\\
 Justificar cada componente & Para cada servicio indicamos qué hace en la solución, por qué lo elegimos y qué alternativa descartamos. & \ref{sec:justificacion}\\
@@ -143,7 +145,7 @@ Es el camino del fraude en tiempo real. La transacción entra por Pub/Sub, Dataf
 
 \subsection{Nivel 2: camino batch, modelado y exposición}
 
-El histórico y los cierres llegan al Data Lake por Datastream y Storage Transfer. Spark en Dataproc Serverless los limpia y los deja en Parquet; de ahí pasan a Silver y, con SQL, a Gold. BigQuery ML entrena sobre Gold y devuelve el pronóstico de liquidez. Composer orquesta el proceso diario (figura~\ref{fig:batch}, página~\pageref{fig:batch}).
+El histórico y los cierres llegan al Data Lake por Datastream y Storage Transfer. Spark en Dataproc Serverless los limpia y los deja en Parquet; de ahí pasan a Silver y, con SQL, a Gold. BigQuery ML entrena sobre Gold y devuelve el pronóstico de liquidez. Managed Service for Apache Airflow (antes Cloud Composer) orquesta el proceso diario (figura~\ref{fig:batch}, página~\pageref{fig:batch}).
 
 
 \subsection{Conexiones entre componentes}
@@ -170,7 +172,7 @@ La numeración coincide con la de los diagramas.
 8 & Cores → Datastream → Data Lake & Cambios de saldos y cierres (CDC) & Cloud VPN de alta disponibilidad\\
 9 & Data Lake ↔ Dataproc & CSV crudo de entrada, Parquet curado de salida & Conector de GCS, workers sin IP pública\\
 10 & Data Lake → Silver & \cod{transacciones\_batch} & \cod{bq load} de Parquet\\
-11 & Datos públicos → BigQuery SQL & SEC, Google Trends y EDI & Consulta directa y Analytics Hub\\
+11 & Datos públicos → BigQuery SQL & SEC, Google Trends y EDI & Consulta directa y BigQuery sharing\\
 12 & Silver y Bronze → SQL → Gold & Dimensiones y hechos & SQL dentro de BigQuery\\
 13 & Gold → BigQuery ML & Series de efectivo y transacciones etiquetadas & \cod{CREATE MODEL}, \cod{ML.FORECAST}\\
 14 & Memorystore → autorización & \textit{Features} del cliente & Direct VPC egress\\
@@ -191,8 +193,8 @@ Cada capa tiene su vista. Arriba están los controles y abajo, los componentes s
 \figura{c4/gobierno.png}{Capa de gobierno de datos}{fig:gobierno}
 
 \begin{itemize}
-\item \textbf{Dataplex} cataloga las tablas, registra el linaje y corre el escaneo de calidad \cod{lumina-dq-\allowbreak transacciones}: unicidad de \cod{event\_id}, nulos en \cod{cliente\_id}, montos no negativos, tipos válidos y distritos entre 1 y 8.
-\item \textbf{Policy tags}: la taxonomía \cod{lumina\_sensibilidad} distingue \cod{PII\_ALTA} (identificadores y saldos) de \cod{PII\_MEDIA} (ubicación y dispositivo).
+\item \textbf{Knowledge Catalog} (antes Dataplex; el comando sigue siendo \cod{gcloud dataplex}) cataloga las tablas, registra el linaje y corre el escaneo de calidad \cod{lumina-dq-\allowbreak transacciones}: unicidad de \cod{event\_id}, nulos en \cod{cliente\_id}, montos no negativos, tipos válidos y distritos entre 1 y 8.
+\item \textbf{Policy tags}: se crean en Knowledge Catalog (antes Data Catalog, que sigue siendo el nombre del servicio en IAM y en la API) pero se aplican sobre las columnas de BigQuery. La taxonomía \cod{lumina\_sensibilidad} distingue \cod{PII\_ALTA} (identificadores y saldos) de \cod{PII\_MEDIA} (ubicación y dispositivo).
 \item \textbf{Contratos de datos}: el esquema del tópico rechaza mensajes mal formados y lo que Dataflow no puede leer va a una cola de errores.
 \item \textbf{Señal de fraude compartida}: la vista \cod{v\_senal\_fraude\_compartida} publica destinos sospechosos sin datos personales. Responde a la queja del caso de que las entidades no comparten información de fraude.
 \end{itemize}
@@ -200,20 +202,39 @@ Cada capa tiene su vista. Arriba están los controles y abajo, los componentes s
 \figura{c4/seguridad.png}{Capa de seguridad}{fig:seguridad}
 
 \begin{itemize}
-\item \textbf{IAM}: una cuenta de servicio por componente, con roles acotados.
-\item \textbf{Cloud KMS}: la llave \cod{lumina-datos} rota cada 90 días y cifra el dataset Gold y el bucket de archivo.
+\item \textbf{IAM}: el diseño pide una cuenta de servicio por componente, con roles sobre el dataset o el bucket que usa. En el laboratorio todos los pipelines comparten \cod{sa-lumina-pipelines}, que tiene roles amplios a nivel de proyecto (\cod{bigquery.dataEditor} y \cod{storage.objectAdmin}, figura~\ref{fig:iam}). Separarla es un pendiente.
+\item \textbf{Cloud KMS}: la llave \cod{lumina-datos} rota cada 90 días y hoy cifra el dataset Gold y el bucket de archivo. Silver, Bronze y la zona raw siguen con llaves de Google; extender la llave a esas capas está en los pendientes.
 \item \textbf{Datos personales}: la vista \cod{v\_transacciones\_entidad} filtra por la entidad del usuario, reemplaza el id del cliente por un seudónimo y redondea la ubicación.
 \item \textbf{Auditoría}: un sink manda los Cloud Audit Logs al dataset \cod{lumina\_auditoria}.
 \end{itemize}
 
-\figura{c4/redes.png}{Capa de redes}{fig:redes}
+\figura{c4/redes.png}{Capa de redes. El perímetro de VPC Service Controls se define en la organización y agrupa proyectos}{fig:redes}
 
 \begin{itemize}
-\item \textbf{VPC \cod{lumina-vpc}} con subred privada y Private Google Access. Los workers de Dataflow corren sin IP pública dentro de ella; lo probamos en la segunda corrida del pipeline.
-\item \textbf{Cloud VPN} lleva el tráfico de Datastream hacia los cores sin pasar por Internet.
-\item \textbf{VPC Service Controls} pone un perímetro alrededor de BigQuery, Cloud Storage, Pub/Sub y Dataflow.
-\item \textbf{Cloud Load Balancing y Cloud Armor} son la única entrada pública y hacen el \textit{failover} hacia São Paulo.
+\item \textbf{VPC \cod{lumina-vpc}} con subred privada y Private Google Access. Los workers de Dataflow corren sin IP pública dentro de ella; lo probamos en la corrida de carga 2. \textit{Desplegado.}
+\item \textbf{Cloud VPN} lleva el tráfico de Datastream hacia los cores sin pasar por Internet. \textit{Diseñado.}
+\item \textbf{VPC Service Controls} no se configura por servicio ni por proyecto sino en la organización: el perímetro agrupa proyectos y bloquea que los datos de BigQuery, Cloud Storage y Pub/Sub salgan de ellos, aunque la credencial sea válida. Planeamos dos perímetros, uno de alta confianza para el proyecto con PII y Gold y otro para el de procesamiento, con reglas de entrada y salida explícitas entre ellos (figura~\ref{fig:redes}). \textit{Diseñado.}
+\item \textbf{Cloud Load Balancing y Cloud Armor} son la única entrada pública y hacen el \textit{failover} hacia São Paulo. \textit{Diseñado.} Mientras no existan, la API de datos se publica en su URL de Cloud Run y solo la protege IAM: el tráfico no pasa por el WAF. En producción el servicio se configura con \cod{--ingress internal-and-cloud-load-balancing}, de modo que la única entrada sea el balanceador.
 \end{itemize}
+
+\begin{table}[H]
+\centering\small
+\caption{Qué quedó desplegado en el laboratorio y qué no}
+\label{tab:desplegado}
+\begin{tabularx}{\linewidth}{P{3.6cm}P{2cm}L}
+\toprule
+\textbf{Componente} & \textbf{Estado} & \textbf{Motivo}\\
+\midrule
+Pub/Sub, Dataflow, Dataproc, BigQuery, BigQuery ML, Cloud Run, Cloud Storage & Desplegado & Núcleo de la entrega\\
+\rowcolor{fila} VPC, firewall, KMS, auditoría, policy tags, Knowledge Catalog (calidad y linaje) & Desplegado & Capas transversales pedidas en la revisión\\
+Managed Service for Apache Airflow (antes Cloud Composer) & No & Costo: un entorno pequeño cuesta varias veces el presupuesto de S/~180 del laboratorio. Los DAG están escritos y se mostrarán en la Entrega 3\\
+\rowcolor{fila} Memorystore & No & Lo consume el servicio de autorización, que todavía no está desplegado; tiene costo fijo por hora\\
+VPC Service Controls & No & Los perímetros se definen en una organización de Google Cloud; el proyecto está en una cuenta personal sin organización\\
+\rowcolor{fila} Cloud VPN y Datastream & No & No hay cores bancarios reales a los que conectarse; el histórico entra como archivo\\
+Load Balancing y Cloud Armor & No & Costo fijo mensual y una sola API de prueba; la API queda protegida solo por IAM\\
+\bottomrule
+\end{tabularx}
+\end{table}
 
 % ====================================================================== 3
 \section{Por qué elegimos cada componente}\label{sec:justificacion}
@@ -234,13 +255,13 @@ Los criterios fueron cinco: la latencia que pide cada caso de uso, el volumen y 
 Pub/Sub & Recibe transacciones y telemetría y las retiene 7 días & Escala de 175 a 5\,000 TPS sin dimensionar particiones. Tiene suscripciones nativas a BigQuery y Cloud Storage que nos ahorran dos pipelines & Kafka gestionado: hay que dimensionar brokers y particiones\\
 Datastream & Copia los cambios de los cores & CDC sin instalar agentes en las bases de las entidades & Debezium: hay que operar Kafka Connect\\
 Storage Transfer & Carga PaySim, feriados y archivos de las entidades & Programado, con reintentos y verificación & Scripts en una VM\\
-Analytics Hub & Lee EDI y publica la señal de fraude & Consume datos del proveedor sin copiarlos y comparte datos entre entidades con permisos & Copiar archivos\\
+BigQuery sharing (antes Analytics Hub) & Lee EDI y publica la señal de fraude & Consume datos del proveedor sin copiarlos y comparte datos entre entidades con permisos & Copiar archivos\\
 \multicolumn{4}{@{}l}{\textbf{\color{verdeazul}Procesamiento}}\\
 Dataflow (Apache Beam) & Evalúa el fraude en tiempo real & Estado y \textit{timers} gestionados para viaje imposible y cuenta mula; escala horizontal. Beam también corre en Flink o Spark & Spark Streaming: micro-lotes y clúster permanente\\
 Dataproc Serverless (Spark) & ETL batch de CSV a Parquet & Spark es el estándar y lo conocemos; se paga por job & Clúster fijo: se paga aunque no corra\\
 BigQuery SQL & Construye Gold y cruza con datos públicos & Transforma donde está el dato, sin moverlo & Hacer todo en Spark\\
-BigQuery ML & Fraude (XGBoost) y liquidez (ARIMA\_PLUS) & Entrena con SQL sobre los mismos datos & Vertex AI desde el inicio: más trabajo para el MVP\\
-Cloud Composer & Orquesta el batch y el precalentamiento & Airflow: dependencias, reintentos y \textit{backfills} & Workflows: no hace \textit{backfill}\\
+BigQuery ML & Fraude (XGBoost) y liquidez (ARIMA\_PLUS) & Entrena con SQL sobre los mismos datos & Gemini Agent Platform (antes Vertex AI) desde el inicio: más trabajo para el MVP\\
+Managed Service for Apache Airflow & Orquesta el batch y el precalentamiento & Airflow: dependencias, reintentos y \textit{backfills} & Workflows: no hace \textit{backfill}\\
 \multicolumn{4}{@{}l}{\textbf{\color{verdeazul}Almacenamiento}}\\
 Memorystore & \textit{Features} para autorizar en menos de 150 ms & Lecturas de submilisegundos; Valkey y Redis son abiertos & Bigtable: más latencia y mayor costo mínimo\\
 Cloud Storage & Data Lake con zonas raw, curated y archive & Barato y durable, con ciclo de vida y bloqueo WORM; formatos abiertos & HDFS: une cómputo y almacenamiento\\
@@ -250,9 +271,9 @@ Cloud Run & Autorización y API de datos & Contenedores que escalan por concurre
 Looker Studio & Tableros de gerencia & Sin licencia; con BI Engine responde en menos de un segundo & Looker: licencia\\
 Vistas autorizadas & Datos por entidad & Control nativo sin copiar datos por banco & Un dataset por entidad\\
 \multicolumn{4}{@{}l}{\textbf{\color{verdeazul}Capas transversales}}\\
-Dataplex & Catálogo, linaje y calidad & Integrado con BigQuery y Dataflow sin instalar nada & DataHub o Atlas: hay que desplegarlos\\
-Cloud KMS & Llaves propias con rotación & Permite revocar el acceso; lo pide la SBS para datos en la nube & Llaves gestionadas por Google\\
-VPC Service Controls & Perímetro de datos & Impide copiar datos fuera aunque la credencial sea válida & Solo IAM\\
+Knowledge Catalog & Catálogo, linaje y calidad & Integrado con BigQuery y Dataflow sin instalar nada & DataHub o Atlas: hay que desplegarlos\\
+Cloud KMS & Llaves propias con rotación & Permite revocar el acceso y demostrar que la entidad controla las llaves de sus datos en la nube & Llaves gestionadas por Google\\
+VPC Service Controls & Perímetro de datos a nivel de organización & Agrupa proyectos e impide copiar datos fuera aunque la credencial sea válida & Solo IAM\\
 Load Balancing + Armor & Entrada pública y \textit{failover} & Balanceo global entre Santiago y São Paulo, con WAF & Balanceo regional\\
 \end{xltabular}
 \endgroup
@@ -286,7 +307,7 @@ Al empezar esta entrega estimamos, sin medir, que un worker \cod{n2-standard-2} 
 
 \textbf{Cómo medimos.} Dejamos el job fijo en un solo worker (\cod{--max\_num\_workers 1}) y publicamos transacciones de PaySim por escalones de tres minutos: 100, 300, 600 y 900 por segundo. En cada minuto registramos cuántos eventos llegaron a BigQuery, la latencia p95 entre el envío y la decisión, el backlog de la suscripción y el uso de CPU del worker. La consulta está en \cod{src/sql/06\_validacion\_capacidad.sql}.
 
-\textbf{Qué encontramos.} El worker se saturó en el primer escalón. Hicimos tres corridas, cambiando una cosa a la vez (tabla~\ref{tab:corridas} y figura~\ref{fig:carga}).
+\textbf{Qué encontramos.} El worker se saturó en el primer escalón: le llegaban 100 eventos por segundo y procesaba entre 65 y 75. En la corrida 1 el simulador publicó 342\,000 eventos en los cuatro escalones; el worker procesó 62\,159 antes de que canceláramos el job y el backlog seguía creciendo (162\,392 mensajes a las 04:37, figura~\ref{fig:backlog}). Hicimos tres corridas de carga (tabla~\ref{tab:corridas} y figura~\ref{fig:carga}). La 1 y la 3 cambian una sola cosa; la 2 cambió dos a la vez, los hilos y la red, así que su resultado no se puede atribuir a ninguna de las dos por separado.
 
 \begin{table}[H]
 \centering\small
@@ -296,8 +317,8 @@ Al empezar esta entrega estimamos, sin medir, que un worker \cod{n2-standard-2} 
 \toprule
 \textbf{Corrida} & \textbf{Cambio} & \textbf{ev/s sostenidos} & \textbf{CPU} & \textbf{Qué aprendimos}\\
 \midrule
-1 & Configuración por defecto & 65–75 (pico de 143) & 93–97 \% & El worker no sigue el ritmo: el backlog llegó a 162\,000 mensajes y la latencia p95, a casi 9 minutos. Los logs mostraban lecturas de estado lentas.\\
-\rowcolor{fila} 2 & 64 hilos por proceso, dentro de la VPC privada & 55–63 & 94–96 \% & Más hilos no ayudan. El límite no es la espera por el estado sino la CPU.\\
+1 & Configuración por defecto & 65–75 (pico de 143) & 93–97 \% & El worker no sigue el ritmo: el backlog llegó a 162\,000 mensajes y la latencia p95, a casi 9 minutos. El runner advirtió que la caché de estado era insuficiente y sugirió \cod{--max\_cache\_memory\_usage\_mb}.\\
+\rowcolor{fila} 2 & 64 hilos por proceso y, a la vez, workers sin IP pública en la VPC privada & 55–63 & 94–96 \% & No mejoró. La CPU al 95 \% apunta a un límite de cómputo, pero no probamos la sugerencia del runner sobre la caché de estado, así que no podemos descartar que también influya. No medimos por separado el efecto de la red; es la configuración que usará producción, así que la tomamos como piso.\\
 3 & Escritura a BigQuery en lotes (\cod{with\_auto\_sharding}) & 78–89 & — & Mejora cerca de un 15 \%. El sink no era el problema principal.\\
 \bottomrule
 \end{tabularx}
@@ -307,18 +328,20 @@ Al empezar esta entrega estimamos, sin medir, que un worker \cod{n2-standard-2} 
 
 Con poca carga el pipeline sí cumple: a 5 eventos por segundo la latencia p95 fue de 2,4 s, por debajo de la meta de 5 s. El problema aparece al saturarse. Haciendo la cuenta (2 vCPU al 95 \% para unos 70 eventos por segundo), cada transacción consume unos 27 ms de CPU. El costo está en las dos etapas con estado: por cada evento hay una lectura, una escritura y un \textit{timer} por cliente y lo mismo por destino, y en el SDK de Python cada una de esas operaciones se serializa y viaja entre el proceso de Python y el \textit{runner}. Escribimos ese código pensando en que fuera claro, no en que fuera rápido, y la prueba lo dejó a la vista.
 
-\textbf{Qué significa para el dimensionamiento.} Con la capacidad medida (75 eventos por segundo, usada al 70 \%), el código actual necesita 4 workers en promedio, 39 en un día de pago y 96 en el pico de diseño. Con la meta de optimización que fijamos más abajo, harían falta 1, 6 y 15 (figura~\ref{fig:dimensionamiento}).
+\textbf{Qué significa para el dimensionamiento.} Con 75 eventos por segundo por worker, usados al 70 \%, el código actual necesita 4 workers en promedio, 39 en un día de pago y 96 en el pico de diseño. Pero dentro de la VPC privada, que es como correrá en producción, el worker sostuvo entre 55 y 63. Para cubrir el día de pago con 40 workers haría falta que cada uno procese al menos 71,4 eventos por segundo ($2\,000 / (40 \times 0{,}7)$), y la corrida 2 no llega. Con el piso de 55, el día de pago pide 52 workers. Con la meta de optimización que fijamos más abajo, harían falta 1, 6 y 15 (figura~\ref{fig:dimensionamiento}).
+
+Estas cifras suponen que la capacidad crece en línea recta con el número de workers. No lo demostramos: medimos con un solo worker. En Dataflow el estado se reparte por clave entre los workers y con 6,9 millones de clientes la carga queda bien distribuida, así que esperamos un comportamiento cercano al lineal, pero el \textit{shuffle} y las escrituras a BigQuery pueden restar eficiencia. La prueba con autoscaling de la Entrega 3 lo confirmará.
 
 \figura{dimensionamiento.png}{Workers de Dataflow e instancias de Cloud Run por escenario}{fig:dimensionamiento}
 
 Esto cambia la lectura de la Entrega 1. Allí el máximo de 30 workers \cod{n2-standard-4} no salió de una medición: sobrestimaba la carga (contaba la telemetría) y suponía una capacidad por worker que el código no alcanza. Ahora los dos datos están medidos o corregidos, y la decisión es esta:
 
 \begin{enumerate}
-\item \textbf{Fase MVP, con el código actual}: mínimo de 4 workers, máximo de 40 y precalentamiento a 20 en días de pago con el DAG \cod{dag\_lumina\_precalentamiento\_dataflow}. Cubre hasta el día de pago. Si llegara un pico mayor, Pub/Sub retiene los mensajes sin perderlos, pero las alertas saldrían con minutos de retraso. Por eso esta versión no debe operar en un Cyber Day.
+\item \textbf{Fase MVP, con el código actual}: mínimo de 4 workers, máximo de 55 y precalentamiento a 20 en días de pago con el DAG \cod{lumina\_precalentamiento\_dataflow} (\cod{src/orchestration/\allowbreak dag\_lumina\_precalentamiento.py}). El máximo sale del peor caso medido (52 workers con 55 eventos por segundo) más un margen pequeño, y cubre hasta el día de pago. Subirlo de 40 a 55 solo cuesta en las horas pico de esos días, unos USD 50 al mes, que caben en la contingencia del 15 \% de la tabla~\ref{tab:costos}. Si llegara un pico mayor, Pub/Sub retiene los mensajes sin perderlos, pero las alertas saldrían con minutos de retraso. Por eso esta versión no debe operar en un Cyber Day.
 \item \textbf{Antes de producción}: optimizar el camino con estado hasta al menos 500 eventos por segundo por worker y repetir esta misma prueba. Las opciones, en el orden en que las probaremos: reescribir las dos etapas con estado en Beam para Java (el grafo y el diseño no cambian, y Beam corre igual en Dataflow); quitar el \textit{timer} que se reprograma en cada evento y usar expiración de estado; y leer el historial del destino desde Memorystore en lugar de mantenerlo en el pipeline. Con 500 eventos por segundo, el máximo queda en 15 workers.
 \end{enumerate}
 
-La autorización de cada transacción no depende de esto: la decide Cloud Run con las \textit{features} de Memorystore en milisegundos. Dataflow mantiene esas \textit{features} al día y genera las alertas, así que un atraso suyo degrada la calidad de la detección pero no detiene los pagos.
+En el diseño, la autorización de cada transacción no depende de esto: la decide Cloud Run con las \textit{features} de Memorystore en milisegundos, y Dataflow solo mantiene esas \textit{features} al día y genera las alertas. Un atraso de Dataflow degradaría la calidad de la detección pero no detendría los pagos. Hoy esa protección no existe: ni el servicio de autorización ni Memorystore están desplegados, y el pipeline todavía no escribe en Memorystore (tabla~\ref{tab:beam}). Hasta que lo estén, un atraso de Dataflow atrasa las alertas y no hay una segunda línea que decida en tiempo real.
 
 
 \subsection{Cloud Run}\label{sec:cloudrun}
@@ -347,9 +370,9 @@ Concurrencia & 80 & 40 & 20\\
 
 Bajar el máximo no reduce el costo por sí solo, porque Cloud Run cobra por uso. Lo que hace es poner un techo al gasto y proteger a Memorystore y BigQuery de una avalancha de solicitudes. La API ya está desplegada con esta configuración (figura~\ref{fig:cloudrun}).
 
-\subsection{Impacto en el costo}
+\subsection{Impacto en el costo}\label{sec:costos}
 
-Recalculamos el costo mensual con precios de lista de \cod{us-central1}, igual que en la Entrega 1, y lo llevamos a Santiago con un ajuste del 22 \%. La tabla~\ref{tab:costos} muestra solo las partidas que cambian; el resto (Pub/Sub, Dataproc, BigQuery, Memorystore, Cloud Storage, Composer, seguridad, observabilidad y DR) suma USD 2\,635 al mes y no se modifica.
+Recalculamos el costo mensual con precios de lista de \cod{us-central1}, igual que en la Entrega 1, y lo llevamos a Santiago con un ajuste del 22 \%. La tabla~\ref{tab:costos} muestra solo las partidas que cambian; el resto (Pub/Sub, Dataproc, BigQuery, Memorystore, Cloud Storage, Airflow gestionado, seguridad, observabilidad y DR) suma USD 2\,635 al mes y no se modifica.
 
 \begin{table}[H]
 \centering\small
@@ -366,7 +389,7 @@ Redes (VPN hacia los cores, NAT, egress) & 80 & 180 & 180\\
 \midrule
 Subtotal más 15 \% de contingencia & 4\,480 & 4\,340 & 3\,710\\
 \rowcolor{fila} \textbf{Santiago con DR en São Paulo} & \textbf{5\,500} & \textbf{5\,300} & \textbf{4\,500}\\
-\textbf{Año 1} & \textbf{66\,000} & \textbf{63\,600} & \textbf{54\,300}\\
+\textbf{Año 1} & \textbf{66\,000} & \textbf{63\,600} & \textbf{54\,000}\\
 \rowcolor{fila} USD por millón de transacciones & 12 & 12 & 10\\
 \bottomrule
 \end{tabularx}
@@ -384,9 +407,9 @@ El laboratorio corre bajo un presupuesto de S/~180 con alertas al 50, 90 y 100 \
 
 El script \cod{src/dataproc/batch\_paysim\_etl.py} lee el CSV de PaySim con un esquema explícito y escribe Parquet particionado por fecha. Descarta filas sin llaves o monto, tipos fuera de dominio, montos negativos y duplicados. Genera un \cod{event\_id} determinista, convierte el paso de simulación en fecha real y asigna distrito, entidad, edad, canal y ubicación con el mismo hash MD5 que usan el simulador y el SQL. También calcula los descuadres de saldo, que son la señal más fuerte de fraude en PaySim.
 
-La corrida en Dataproc Serverless tardó 2 min 51 s, leyó 6\,362\,620 filas y las escribió todas en 31 particiones (552 MiB en Parquet). PaySim no trae errores de origen, así que no se descartó ninguna fila. Después, \cod{bq load} llevó el Parquet a \cod{lumina\_silver.transacciones\_batch}, particionada por día y agrupada por distrito, tipo y cliente.
+El job de Dataproc Serverless tardó 2 min 51 s, leyó 6\,362\,620 filas y las escribió todas en 31 particiones (552 MiB en Parquet). Ninguna fila cayó en las reglas de descarte del ETL, pero eso no significa que el archivo viniera limpio: tuvimos que normalizarlo a mano antes de subirlo, fuera del pipeline, como se explica a continuación. Después, \cod{bq load} llevó el Parquet a \cod{lumina\_silver.transacciones\_batch}, particionada por día y agrupada por distrito, tipo y cliente.
 
-Al descargar el dataset de Kaggle encontramos dos problemas que obligaron a normalizarlo antes de subirlo: viene partido en \cod{train.csv} y \cod{validation.csv}, con las columnas \cod{isFraud} e \cod{isFlaggedFraud} en orden invertido, y con fines de línea de Windows. Como el ETL lee por posición, sin esa limpieza la etiqueta de fraude habría quedado cambiada.
+Al descargar el dataset de Kaggle encontramos dos problemas que obligaron a normalizarlo antes de subirlo: viene partido en \cod{train.csv} y \cod{validation.csv}, con las columnas \cod{isFraud} e \cod{isFlaggedFraud} en orden invertido, y con fines de línea de Windows. Como el ETL lee por posición, sin esa limpieza la etiqueta de fraude habría quedado cambiada. Esa normalización la hicimos con un script aparte; en la Entrega 3 la pasaremos al ETL, que leerá las columnas por nombre.
 
 \subsection{Pipeline streaming con Apache Beam}
 
@@ -400,19 +423,36 @@ Al descargar el dataset de Kaggle encontramos dos problemas que obligaron a norm
 \midrule
 \cod{LeerPubSub} & Lee la suscripción y descarta duplicados por \cod{event\_id}\\
 \rowcolor{fila} \cod{Parsear} & Valida campos, tipos y montos; lo inválido va al tópico \cod{tx-eventos-dlq}\\
-\cod{ViajeImposible} & Guarda por cliente la última ubicación y calcula la velocidad. Regla R4 si supera 800 km/h\\
-\rowcolor{fila} \cod{VelocidadDestino} & Cuenta por destino las transacciones de los últimos 10 minutos. Regla R5 (cuenta mula) con 3 o más\\
-\cod{Reglas} & Suma R1 a R5 en un score: desde 0,8 bloquea, desde 0,5 manda a revisión\\
-\rowcolor{fila} Salidas & Todas las transacciones a Silver; las alertas a Silver y al tópico \cod{alertas-fraude}\\
+\cod{ViajeImposible} & Guarda por cliente la última ubicación y calcula la velocidad\\
+\rowcolor{fila} \cod{VelocidadDestino} & Cuenta por destino las transacciones de los últimos 10 minutos\\
+\cod{Reglas} & Suma los pesos de las reglas de la tabla~\ref{tab:reglas} en un score de 0 a 1: desde 0,8 bloquea, desde 0,5 manda a revisión\\
+\rowcolor{fila} Salidas & Todas las transacciones a Silver; las alertas a Silver y al tópico \cod{alertas-fraude}. La escritura de \textit{features} a Memorystore está en el diseño, no en el código actual\\
 \bottomrule
 \end{tabularx}
 \end{table}
 
-En la primera corrida el simulador publicó 30\,000 transacciones a 100 por segundo y las 30\,000 llegaron a Silver sin duplicados; 130 terminaron en alerta. En paralelo, 50 terminales enviaron 6\,000 lecturas de telemetría que la suscripción escribió en Bronze sin pasar por ningún pipeline.
+En la prueba funcional el simulador publicó 30\,000 transacciones a 100 por segundo y las 30\,000 llegaron a Silver con \cod{event\_id} distintos; 130 terminaron en alerta (50 bloqueos y 80 a revisión, figura~\ref{fig:funcional}). La figura~\ref{fig:streamingres} muestra 29\,984 y 122 porque filtra por la hora del evento y deja fuera los últimos segundos de la corrida. En paralelo, 50 terminales enviaron 6\,000 lecturas de telemetría que la suscripción escribió en Bronze sin pasar por ningún pipeline.
+
+\begin{table}[H]
+\centering\small
+\caption{Reglas de fraude del pipeline y su peso en el score}
+\label{tab:reglas}
+\begin{tabularx}{\linewidth}{P{4.4cm}LP{1.2cm}}
+\toprule
+\textbf{Regla} & \textbf{Se activa cuando} & \textbf{Peso}\\
+\midrule
+\cod{R1\_VACIADO\_CUENTA} & TRANSFER o CASH\_OUT por todo el saldo de origen (la cuenta queda en cero) & 0,5\\
+\rowcolor{fila} \cod{R2\_INCONSISTENCIA\_DESTINO} & TRANSFER o CASH\_OUT hacia un destino con saldo cero antes y después & 0,3\\
+\cod{R3\_MONTO\_ALTO} & TRANSFER de más de 200\,000 & 0,2\\
+\rowcolor{fila} \cod{R4\_VIAJE\_IMPOSIBLE} & Entre dos transacciones del mismo cliente la velocidad supera 800 km/h & 0,5\\
+\cod{R5\_CUENTA\_MULA} & Tres o más TRANSFER al mismo destino en 10 minutos & 0,3\\
+\bottomrule
+\end{tabularx}
+\end{table}
 
 \subsection{Batch y streaming en el mismo modelo}
 
-Los dos caminos escriben en Silver con el mismo esquema y asignan distrito y entidad con la misma función. La vista \cod{fact\_transacciones} los une con una columna \cod{origen}, de modo que un KPI calculado sobre el histórico se puede comparar con uno calculado en vivo.
+Los dos caminos escriben en Silver con el mismo esquema y asignan distrito y entidad con la misma función. La vista \cod{fact\_transacciones} los une con una columna \cod{origen}, de modo que un KPI calculado sobre el histórico se puede comparar con uno calculado en vivo. Revisamos que la unión no duplique transacciones: ningún \cod{event\_id} aparece en los dos orígenes, y el histórico cubre julio de 2026 mientras que el stream es del 10 de noviembre, así que tampoco se cruzan en los KPI diarios (figura~\ref{fig:funcional}).
 
 \subsection{Modelo estrella en Gold}
 
@@ -441,13 +481,15 @@ Dos ajustes respecto a lo planeado. Google Trends no publica datos de Perú en \
 
 \subsection{Modelos en BigQuery ML}
 
-El modelo de fraude (XGBoost) se evaluó sobre el 20 \% de TRANSFER y CASH\_OUT que no vio en el entrenamiento, con la proporción real de fraude. Obtuvo una precisión de 0,81, un recall de 0,995 y un AUC de 0,998, por encima de la meta de la Entrega 1 (recall de al menos 85 \% con precisión de al menos 70 \%). La variable que más pesa es el descuadre del saldo de origen. Las reglas del pipeline, sin modelo, detectan el 98,9 \% de los fraudes con una precisión de 0,52; el modelo reduce a la mitad las falsas alarmas.
+El modelo de fraude (XGBoost) se evaluó sobre el 20 \% de TRANSFER y CASH\_OUT que no vio en el entrenamiento, con la proporción real de fraude. Obtuvo una precisión de 0,81, un recall de 0,995 y un AUC de 0,998, por encima de la meta de la Entrega 1 (recall de al menos 85 \% con precisión de al menos 70 \%). Ese resultado tiene una fuga de información. Las dos variables que más pesan son el descuadre del saldo de origen (\cod{err\_saldo\_orig}, 2,31) y el saldo de origen después de la transacción (\cod{saldo\_nuevo\_orig}, 0,44), y ninguna existe en el momento de autorizar: se conocen cuando la transacción ya se ejecutó. Entrenamos un segundo modelo solo con lo que se sabe antes de decidir (tipo, monto, saldos previos, proporción del saldo que se mueve y hora). Obtuvo una precisión de 0,81, un recall de 0,994 y un AUC de 0,998 (figura~\ref{fig:sinfuga}), prácticamente lo mismo. La variable que manda ahora es la proporción del saldo que se mueve: en PaySim el fraude casi siempre vacía la cuenta, el mismo patrón que usa la regla R1. Con datos reales no esperamos una separación tan limpia; la cifra sirve para validar el flujo, no para prometer ese desempeño.
 
-El pronóstico de liquidez (ARIMA\_PLUS por distrito) no alcanza la meta de un error menor al 15 \%: el MAPE diario va de 32 \% a 59 \% en siete de los ocho distritos si se excluye el último día. La causa está en los datos: en sus últimos días PaySim casi no tiene movimiento (282 transacciones el 31 de julio frente a unas 50\,000 en un día típico), y esos son justamente los días reservados para evaluar. Con un año de datos reales el modelo podrá aprender la estacionalidad semanal y mensual; con 27 días no puede.
+Las reglas del pipeline, sin modelo, detectan el 98,9 \% de los fraudes con una precisión de 0,52: por cada fraude detectado generan 0,9 falsas alarmas. El modelo genera 0,23, cerca de un 74 \% menos. La comparación es aproximada porque las bases no son iguales: las reglas se midieron sobre las 92\,074 transacciones de todos los tipos que pasaron por el pipeline, y el modelo, sobre el 20 \% reservado de TRANSFER y CASH\_OUT.
+
+El pronóstico de liquidez (ARIMA\_PLUS por distrito) no alcanza la meta de un error menor al 15 \%. Con los cuatro días de evaluación, el MAPE diario va de 70 \% a 816 \% según el distrito. Si se excluye el 31 de julio baja a entre 32 \% y 59 \% en siete distritos y queda en 228 \% en el octavo (figura~\ref{fig:mape}). Ninguna de las dos lecturas cumple la meta. La causa está en los datos: en sus últimos días PaySim casi no tiene movimiento (282 transacciones el 31 de julio frente a unas 50\,000 en un día típico), y esos son justamente los días reservados para evaluar. Con un año de datos reales el modelo podrá aprender la estacionalidad semanal y mensual; con 27 días no puede.
 
 \subsection{API de datos}
 
-La API en Cloud Run responde 403 a quien llama sin credenciales y devuelve las alertas, el riesgo de un cliente y el plan de liquidez a quien presenta un token válido (figura~\ref{fig:api}). En la Entrega 3 la conectaremos al tablero y a la demo.
+La API en Cloud Run responde 403 a quien llama sin credenciales y devuelve las alertas, el riesgo de un cliente y el plan de liquidez a quien presenta un token válido (figura~\ref{fig:api}). Hoy se accede directo por su URL de Cloud Run, sin pasar por Cloud Armor (sección~\ref{sec:transversales}). Tiene además dos problemas de gobierno que corregiremos: corre con la cuenta compartida \cod{sa-lumina-pipelines}, que tiene permisos de escritura en todo el proyecto, y consulta Silver directamente, así que devuelve \cod{cliente\_id} en claro (figura~\ref{fig:api}) en lugar de pasar por las vistas seudonimizadas. Debe usar una cuenta propia con lectura solo sobre esas vistas. En la Entrega 3 la conectaremos al tablero y a la demo.
 
 % ====================================================================== 6
 \section{Evidencias de la implementación}
@@ -473,18 +515,18 @@ Todas las capturas son salidas reales de \cod{gcloud} y \cod{bq} ejecutadas sobr
 \evid{11_cmek.png}{El dataset Gold y el bucket de archivo usan la llave propia (CMEK)}{cmek}
 \evid{12_iam.png}{Roles de la cuenta de servicio de los pipelines}{iam}
 \evid{13_policy_tags.png}{Taxonomía de sensibilidad con los tags \cod{PII\_ALTA} y \cod{PII\_MEDIA}}{policytags}
-\evid{14_dataplex_dq.png}{Escaneo de calidad de Dataplex sobre Silver: cinco reglas aprobadas en una muestra de 636\,421 filas}{dq}
+\evid{14_dataplex_dq.png}{Escaneo de calidad de Knowledge Catalog (\cod{gcloud dataplex}) sobre Silver: cinco reglas aprobadas en una muestra de 636\,421 filas}{dq}
 \evid{consola/dataplex_dq.png}{Consola de Knowledge Catalog: dos ejecuciones del escaneo aprobadas y las cinco reglas con umbral de 100 \%}{c-dq}
 \evid{16_vista_entidad.png}{La vista por entidad solo devuelve filas de la entidad 3 y reemplaza el id del cliente por un seudónimo}{vistaentidad}
 \evid{17_auditoria.png}{Sink de auditoría y tablas de Cloud Audit Logs en BigQuery}{auditoria}
-\evid{consola/linaje.png}{Linaje de \cod{fact\_liquidez\_hora} en BigQuery: viene de \cod{fact\_transacciones}, \cod{dim\_distrito} (Google Trends) y \cod{dim\_fecha} (feriados). El tramo de Spark lo publica Dataproc; los pasos de BigQuery los registramos con eventos OpenLineage (\cod{infra/registrar\_linaje.py})}{c-linaje}
+\evid{consola/linaje.png}{Linaje de \cod{fact\_liquidez\_hora} en BigQuery: viene de \cod{fact\_transacciones}, \cod{dim\_distrito} (Google Trends) y \cod{dim\_fecha} (feriados). \cod{dim\_distrito} entra solo como la lista de los ocho distritos sobre la que se arma la serie por hora; Trends le da el nombre de región y no es variable del pronóstico. El tramo de Spark lo publica Dataproc; los pasos de BigQuery los registramos con eventos OpenLineage (\cod{infra/registrar\_linaje.py})}{c-linaje}
 
 \subsection{Pipeline batch}
 
-\evid{18_paysim_raw.png}{PaySim normalizado en la zona raw del Data Lake (476 MiB)}{paysimraw}
+\evid{18_paysim_raw.png}{PaySim normalizado en la zona raw del Data Lake (469,72 MiB)}{paysimraw}
 \evid{19_dataproc_submit.png}{Envío del job de Spark a Dataproc Serverless con la línea de control de calidad}{dataproc}
 \evid{19b_dataproc_estado.png}{Estado final del job de Spark: SUCCEEDED en 2 min 51 s}{dataprocestado}
-\evid{consola/dataproc_batch.png}{Consola de Dataproc Serverless: batch \cod{lumina-etl-20261110-v2} terminado en 2 min 50 s con la cuenta de servicio de los pipelines (0,37 DCU-hora)}{c-dataproc}
+\evid{consola/dataproc_batch.png}{Consola de Dataproc Serverless, que la consola ya muestra como Managed Apache Spark: batch \cod{lumina-etl-20261110-v2} terminado en 2 min 50 s con la cuenta de servicio de los pipelines (0,37 DCU-hora)}{c-dataproc}
 \evid{20_curated.png}{Zona curated: 31 particiones por fecha en Parquet}{curated}
 \evid{20a_dimensiones.png}{Dimensiones conformadas: distritos asociados a regiones de Trends y entidades con su banco de referencia en la SEC}{dimensiones}
 \evid{21_silver_batch.png}{Tabla Silver de transacciones batch: 6\,362\,620 filas, particionada y agrupada}{silver}
@@ -492,6 +534,7 @@ Todas las capturas son salidas reales de \cod{gcloud} y \cod{bq} ejecutadas sobr
 \subsection{Pipeline streaming}
 
 \evid{24_simulador.png}{Simulador publicando 30\,000 transacciones a 100 por segundo}{simulador}
+\evid{25b_corrida_funcional.png}{Decisiones de las 30\,000 transacciones de la prueba funcional y revisión de duplicados entre el histórico y el stream}{funcional}
 \evid{25_streaming.png}{Decisiones del pipeline, alertas con las reglas que las dispararon y telemetría escrita en Bronze}{streamingres}
 \evid{23_dataflow_job.png}{Job de Dataflow con workers sin IP pública en la subred \cod{lumina-datos-us-central1}}{dataflowjob}
 \evid{consola/dataflow_grafo.png}{Grafo del job \cod{lumina-fraude-stream-v3}: lectura de Pub/Sub, parseo con salida a DLQ y etapas con estado por cliente. \cod{ViajeImposible} concentra el 37 \% del tiempo de procesamiento}{c-grafo}
@@ -513,6 +556,7 @@ Todas las capturas son salidas reales de \cod{gcloud} y \cod{bq} ejecutadas sobr
 \evid{30a_bqml.png}{Entrenamiento de los modelos de fraude y liquidez}{bqml}
 \evid{30_bqml_eval.png}{Evaluación del modelo de fraude y variables más importantes}{bqmleval}
 \evid{30b_liquidez.png}{Error del pronóstico por día y plan de liquidez por distrito}{liquidez}
+\evid{30d_bqml_sin_fuga.png}{Modelo de fraude con y sin las variables posteriores a la transacción, y variables más importantes del modelo sin fuga}{sinfuga}
 \evid{30c_mape.png}{MAPE del pronóstico por distrito, con y sin el último día de PaySim}{mape}
 
 \subsection{API de datos en Cloud Run}
@@ -529,10 +573,17 @@ Todas las capturas son salidas reales de \cod{gcloud} y \cod{bq} ejecutadas sobr
 
 \begin{itemize}
 \item Conectar Looker Studio a las vistas \cod{v\_kpi\_*} y armar el tablero de la demo.
-\item Desplegar los dos DAG en Composer y mostrar una ejecución completa.
+\item Desplegar los dos DAG en Managed Service for Apache Airflow y mostrar una ejecución completa.
 \item Llevar el modelo de fraude al pipeline (hoy decide con reglas) y desplegar el servicio de autorización.
 \item Optimizar las etapas con estado del pipeline y repetir la prueba de carga hasta llegar a 500 eventos por segundo por worker.
-\item Repetir la prueba con autoscaling activo para confirmar que el job escala de 4 a 40 workers sin perder latencia.
+\item Repetir la prueba con autoscaling activo para confirmar que el job escala de 4 a 55 workers sin perder latencia y que la capacidad crece de forma lineal.
+\item Medir por separado el efecto de la VPC privada en la capacidad del worker (corrida de carga 2).
+\item Repetir la corrida de carga con \cod{--max\_cache\_memory\_usage\_mb} más alto, como sugirió el runner, antes de concluir que el límite es solo la CPU.
+\item Dar a la API una cuenta de servicio propia, con lectura solo sobre las vistas seudonimizadas, y dejar de devolver \cod{cliente\_id} en claro.
+\item Separar \cod{sa-lumina-pipelines} en una cuenta por componente, con roles sobre el dataset o bucket que usa.
+\item Extender la llave CMEK a Silver, Bronze y la zona raw.
+\item Poner el balanceador con Cloud Armor delante de la API y cerrar el acceso directo a su URL.
+\item Pasar la normalización de PaySim al ETL de Spark.
 \item Preparar la demo de punta a punta: simulador, Pub/Sub, Dataflow, alerta, API y tablero.
 \end{itemize}
 
@@ -547,13 +598,15 @@ Todas las capturas son salidas reales de \cod{gcloud} y \cod{bq} ejecutadas sobr
 \midrule\endhead
 \cod{doc/arquitectura/lumina.c4} & Modelo C4 en LikeC4; \cod{render.sh} exporta las vistas\\
 \cod{doc/evidencias/} & Logs de cada comando y generador de capturas\\
-\cod{src/infra/\allowbreak gobierno\_seguridad\_red.sh} & VPC, firewall, KMS, auditoría, policy tags y Dataplex\\
+\cod{src/infra/\allowbreak gobierno\_seguridad\_red.sh} & VPC, firewall, KMS, auditoría, policy tags y Knowledge Catalog\\
 \cod{src/sql/05\_gobierno\_seguridad.sql} & Vistas por entidad y señal de fraude compartida\\
 \cod{src/sql/06\_validacion\_capacidad.sql} & Análisis de la prueba de carga\\
 \cod{src/orchestration/\allowbreak dag\_lumina\_precalentamiento.py} & Sube y baja el mínimo de workers en días de pago\\
 \cod{src/sql/02\_dimensiones.sql}, \cod{03\_gold.sql} & Trends con Colombia como referencia y SEC con el año 2018\\
 \cod{src/infra/setup.sh} & Rol \cod{pubsub.viewer} para la cuenta de los pipelines\\
 \cod{src/dataflow/\allowbreak fraud\_streaming\_pipeline.py} & Escritura a BigQuery en lotes y parámetros de ejecución medidos\\
+\cod{src/sql/04\_bqml.sql} & Modelo de fraude sin variables posteriores a la transacción\\
+\cod{src/infra/registrar\_linaje.py} & Registra el linaje de los pasos de BigQuery y del streaming\\
 \bottomrule
 \end{xltabular}
 \endgroup
