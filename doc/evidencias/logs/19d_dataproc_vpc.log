@@ -1,0 +1,16 @@
+$ gcloud dataproc batches describe lumina-etl-20261118-vpc --region us-central1 --format='yaml(name.basename(),state,stateTime,environmentConfig.executionConfig.subnetworkUri,environmentConfig.executionConfig.serviceAccount,runtimeInfo.approximateUsage.milliDcuSeconds)'; echo; gcloud logging read 'resource.type="cloud_dataproc_batch" AND resource.labels.batch_id="lumina-etl-20261118-vpc" AND textPayload:"[calidad]"' --limit 1 --format='value(textPayload)' --freshness=1h
+# proyecto: lumina-bank-utec · 2026-11-18 15:04:55 -05
+
+environmentConfig:
+  executionConfig:
+    serviceAccount: sa-lumina-pipelines@lumina-bank-utec.iam.gserviceaccount.com
+    subnetworkUri: lumina-datos-us-central1
+name: lumina-etl-20261118-vpc
+runtimeInfo:
+  approximateUsage:
+    milliDcuSeconds: '1635300'
+state: SUCCEEDED
+stateTime: '2026-11-18T19:59:15.589454Z'
+
+
+# código de salida: 0

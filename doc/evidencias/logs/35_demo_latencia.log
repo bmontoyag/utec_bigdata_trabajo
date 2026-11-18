@@ -1,0 +1,14 @@
+$ bq query --use_legacy_sql=false --format=pretty 'SELECT FORMAT_TIMESTAMP("%H:%M", decision_ts) AS minuto_utc, COUNT(*) AS eventos, APPROX_QUANTILES(latencia_ms,100)[OFFSET(50)] AS p50_ms, APPROX_QUANTILES(latencia_ms,100)[OFFSET(95)] AS p95_ms FROM lumina_silver.transacciones_stream WHERE decision_ts BETWEEN "2026-11-18 19:56:00" AND "2026-11-18 20:01:00" GROUP BY 1 ORDER BY 1'
+# proyecto: lumina-bank-utec · 2026-11-18 15:06:09 -05
+
++------------+---------+--------+--------+
+| minuto_utc | eventos | p50_ms | p95_ms |
++------------+---------+--------+--------+
+| 19:56      |    1672 |  56565 |  83712 |
+| 19:57      |    1695 |    524 |  23966 |
+| 19:58      |    1197 |    402 |    565 |
+| 19:59      |    1202 |    408 |    545 |
+| 20:00      |     234 |    422 |    559 |
++------------+---------+--------+--------+
+
+# código de salida: 0

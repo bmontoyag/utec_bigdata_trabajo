@@ -10,7 +10,8 @@ dataflow/fraud_streaming_pipeline.py Streaming: reglas de fraude con estado → 
 dataproc/batch_paysim_etl.py         Batch: CSV raw → Parquet curado (Spark)
 sql/01..06                           DDL, dimensiones, Gold/KPIs, BigQuery ML, gobierno, validación de capacidad
 orchestration/                       DAGs de Managed Service for Apache Airflow (antes Cloud Composer): batch diario y precalentamiento de Dataflow
-api/                                 API en Cloud Run (FastAPI)
+api/                                 API en Cloud Run (FastAPI); lee solo las vistas de lumina_api (sql/07_api.sql)
+demo/demo.sh                         Demo end-to-end de la Entrega 3 (plantilla, job, simulador, verificación, apagado)
 ```
 
 > Todos los comandos se ejecutan desde `src/`. Los archivos SQL usan el marcador `PROJECT_ID`, que se reemplaza con `sed`.
@@ -52,7 +53,7 @@ sed "s/PROJECT_ID/$PROJECT_ID/g" sql/02_dimensiones.sql | bq query --use_legacy_
 ```bash
 gcloud storage cp dataproc/batch_paysim_etl.py gs://$PROJECT_ID-lumina-temp/code/
 gcloud dataproc batches submit pyspark gs://$PROJECT_ID-lumina-temp/code/batch_paysim_etl.py \
-  --region $REGION --version 2.2 \
+  --region $REGION --version 2.2 --subnet lumina-datos-$REGION \
   --service-account sa-lumina-pipelines@$PROJECT_ID.iam.gserviceaccount.com \
   -- --entrada gs://$PROJECT_ID-lumina-raw/paysim/ --salida gs://$PROJECT_ID-lumina-curated/transacciones/
 
@@ -63,8 +64,8 @@ bq load --location=US --replace --source_format=PARQUET \
   --hive_partitioning_source_uri_prefix=gs://$PROJECT_ID-lumina-curated/transacciones/ \
   lumina_silver.transacciones_batch "gs://$PROJECT_ID-lumina-curated/transacciones/*"
 ```
-> Si Dataproc pide una subred con *Private Google Access*:
-> `gcloud compute networks subnets update default --region $REGION --enable-private-ip-google-access`
+> `--subnet` deja los workers de Spark en `lumina-vpc` (requiere haber corrido `infra/gobierno_seguridad_red.sh`).
+> Dataproc Serverless solo usa IP internas; la subred necesita *Private Google Access*, que ese script ya activa.
 
 ## 5. Camino STREAMING: Pub/Sub → Dataflow → BigQuery
 
@@ -105,9 +106,14 @@ Evidencias: ejecuta las consultas comentadas de `04_bqml.sql` (ML.EVALUATE, ROC,
 
 ## 7. API (Entrega 3)
 
+La API usa su propia cuenta `sa-lumina-api`, que solo puede leer el dataset `lumina_api`. Sus vistas son
+autorizadas: leen Silver, Gold y ML en nombre de la API y devuelven clientes y destinos seudonimizados.
+
 ```bash
+sed "s/PROJECT_ID/$PROJECT_ID/g" sql/07_api.sql | bq query --use_legacy_sql=false --location=US
+bash infra/api_acceso.sh
 gcloud run deploy lumina-api --source api --region $REGION \
-  --service-account sa-lumina-pipelines@$PROJECT_ID.iam.gserviceaccount.com \
+  --service-account sa-lumina-api@$PROJECT_ID.iam.gserviceaccount.com \
   --set-env-vars PROJECT_ID=$PROJECT_ID --no-allow-unauthenticated \
   --cpu 1 --memory 512Mi --concurrency 20 --min-instances 0 --max-instances 3 --timeout 60
 curl -H "Authorization: Bearer $(gcloud auth print-identity-token)" <URL>/alertas?minutos=30
@@ -117,6 +123,21 @@ Dimensionamiento (doc/Entrega 2, §4): ~20 req/s en el pico × 1.5 s por consult
 simultáneas → 2 instancias con concurrencia 20; el máximo de 3 deja margen y limita las consultas paralelas a
 BigQuery (3 × 20 = 60). En producción `--min-instances 1`. El servicio de autorización (producción) usa
 `--concurrency 40 --min-instances 2 --max-instances 20 --no-cpu-throttling`.
+
+## 7b. Demo end-to-end (Entrega 3)
+
+Requiere un entorno con `apache-beam[gcp]` y `google-cloud-pubsub` (sección 0). Desde `src/`:
+
+```bash
+bash demo/demo.sh plantilla   # una vez: guarda el pipeline como plantilla de Dataflow en el bucket temp
+bash demo/demo.sh datos       # una vez: muestra de PaySim (~258 mil filas) en demo/paysim_demo.csv
+bash demo/demo.sh iniciar     # 15 min antes de la demo: el worker tarda 3–5 min en arrancar
+bash demo/demo.sh estado      # esperar "WORKER LISTO": si se publica antes, el backlog del arranque sube la latencia
+bash demo/demo.sh publicar    # 20 ev/s durante 5 min
+bash demo/demo.sh verificar   # decisiones, p95, alertas y la misma consulta por la API
+# Prueba del 18-nov a 20 ev/s con el worker listo: p95 de 0,55 s (doc/evidencias/logs/35_demo_latencia.log)
+bash demo/demo.sh apagar      # al terminar: drena el job
+```
 
 ## 8. Orquestación (Managed Service for Apache Airflow, antes Composer)
 
