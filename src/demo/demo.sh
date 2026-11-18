@@ -8,7 +8,7 @@
 #   estado      estado del job y backlog de la suscripción
 #   publicar    publica transacciones a 20 ev/s (por debajo de la capacidad medida de un worker)
 #   verificar   decisiones, latencia, alertas recientes y la misma consulta vía API
-#   apagar      drena el job (deja de cobrar)
+#   apagar      cancela el job (deja de cobrar)
 set -euo pipefail
 
 export CLOUDSDK_ACTIVE_CONFIG_NAME="${CLOUDSDK_ACTIVE_CONFIG_NAME:-lumina}"
@@ -98,10 +98,12 @@ verificar)
     "${URL}/alertas?minutos=${MINUTOS}&limite=2" | "$PYTHON" -m json.tool
   ;;
 apagar)
+  # Drain no termina: las etapas con estado dejan timers de expiración por cliente que lo mantienen abierto.
+  # En la demo no hay estado que conservar, así que se cancela (en producción se usa update o drain planificado).
   for id in $(gcloud dataflow jobs list --region "$REGION" --status=active --format="value(id)"); do
-    gcloud dataflow jobs drain "$id" --region "$REGION"
+    gcloud dataflow jobs cancel "$id" --region "$REGION"
   done
-  echo "Drenando. Verifique con 'estado' que no quede ningún job activo."
+  echo "Cancelado. Verifique con 'estado' que no quede ningún job activo."
   ;;
 *)
   sed -n '2,12p' "$0"; exit 1
