@@ -1,0 +1,7 @@
+$ bash demo/demo.sh apagar
+# proyecto: lumina-bank-utec · 2026-11-18 17:27:44 -05
+
+Started draining job [2026-11-18_14_02_26-14228896992862879184]
+Drenando. Verifique con 'estado' que no quede ningún job activo.
+
+# código de salida: 0

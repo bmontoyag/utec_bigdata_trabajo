@@ -4,6 +4,16 @@ Video sin locución, de unos 7 minutos. Muestra el camino streaming funcionando 
 transacción sale del simulador, pasa por Pub/Sub y Dataflow, queda decidida en BigQuery y se consulta por la API y el
 tablero. En la sustentación el equipo lo narra con este libreto mientras corre.
 
+**Video ya grabado:** `doc/demo/Lumina Bank - Demo end-to-end.mp4` (7:08, 1080p, sin audio). Se armó con capturas reales de
+la consola y la terminal tomadas el 18 de noviembre de 2026 mientras el pipeline corría (job `lumina-demo-1702`, 9 000
+transacciones a 20 por segundo). Los tiempos de la sección 2 coinciden con el video: 0:00–0:06 es la portada y 7:00–7:08
+el cierre. Cada cuadro trae el número de escena arriba y una leyenda abajo para seguir el libreto. El montaje se repite con
+`doc/demo/montaje/montar.py`. Las secciones 1, 3 y 4 sirven si quieren volver a grabarlo o hacerlo en vivo.
+
+Cifras que se ven en el video: p95 de 0,55 a 0,6 s por minuto; de 1 964 a 5 491 transacciones aprobadas entre dos
+ejecuciones de la misma consulta; Pub/Sub con 19,8 mensajes publicados y 20,1 confirmados por segundo; la API responde
+403 sin token y devuelve seudónimos con token.
+
 ---
 
 ## 1. Antes de grabar (20 minutos antes)

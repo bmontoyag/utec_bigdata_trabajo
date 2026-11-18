@@ -8,3 +8,6 @@ venv/
 *.csv
 *.parquet
 .env
+
+# Video de la demo (50 MB): se entrega aparte
+*.mp4

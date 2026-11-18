@@ -1,0 +1,14 @@
+$ PYTHON=/private/tmp/claude-501/-Users-bryanmontoya-Library-CloudStorage-GoogleDrive-bmontoyag-pe-gmail-com-My-Drive-Personal-EDUCACION-Mestria-UTEC-Ciclo-2026-2-BigQuery-trabajo/e2918ccc-28a1-4233-8433-a3c7f1e9c139/scratchpad/venv/bin/python LIMIT=9000 bash demo/demo.sh publicar
+# proyecto: lumina-bank-utec · 2026-11-18 17:19:55 -05
+
+1000 eventos publicados (20 ev/s)
+2000 eventos publicados (20 ev/s)
+3000 eventos publicados (20 ev/s)
+4000 eventos publicados (20 ev/s)
+5000 eventos publicados (20 ev/s)
+6000 eventos publicados (20 ev/s)
+7000 eventos publicados (20 ev/s)
+8000 eventos publicados (20 ev/s)
+Listo: 9000 eventos en 450.0s
+
+# código de salida: 0

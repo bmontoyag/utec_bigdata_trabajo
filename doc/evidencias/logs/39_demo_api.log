@@ -1,0 +1,39 @@
+$ U=$(gcloud run services describe lumina-api --region us-central1 --format='value(status.url)'); echo "Sin token: HTTP $(curl -s -o /dev/null -w '%{http_code}' $U/alertas)"; echo; echo 'Con token:'; curl -s -H "Authorization: Bearer $(gcloud auth print-identity-token)" "$U/alertas?minutos=10&limite=2" | python3 -m json.tool
+# proyecto: lumina-bank-utec · 2026-11-18 17:25:19 -05
+
+Sin token: HTTP 403
+
+Con token:
+[
+    {
+        "event_id": "1239f45a-b6f2-4da1-a4c6-1aef126dec67",
+        "event_ts": "2026-11-18T22:25:19.174309+00:00",
+        "cliente_token": "823f93d0c010701bb8dc6d50722edee144d0ca10b38eb5c5f7451845505aedee",
+        "destino_token": "f12810207cdf02d923fd23e289f58204e03f0a1587fc5f008f513aa08220454d",
+        "distrito_id": 6,
+        "tipo": "TRANSFER",
+        "monto": 515016.08,
+        "score": 0.5,
+        "decision": "REVISAR",
+        "reglas": [
+            "R3_MONTO_ALTO",
+            "R5_CUENTA_MULA"
+        ]
+    },
+    {
+        "event_id": "ec28608e-813a-41a2-8c7a-14e29493b5d6",
+        "event_ts": "2026-11-18T22:25:15.077422+00:00",
+        "cliente_token": "0f03224bc60ed86fbf20ea64f1ee48a1cd5fd308cbd44441acb5da3b5cafc589",
+        "destino_token": "b38073a8219e6241a52ff63c0e94b8c4a7f310b68cae4493ba43e6763dd7cc18",
+        "distrito_id": 1,
+        "tipo": "CASH_OUT",
+        "monto": 33332.86,
+        "score": 0.5,
+        "decision": "REVISAR",
+        "reglas": [
+            "R1_VACIADO_CUENTA"
+        ]
+    }
+]
+
+# código de salida: 0
