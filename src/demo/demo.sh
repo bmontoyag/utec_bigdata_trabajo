@@ -93,6 +93,7 @@ verificar)
         ORDER BY event_ts DESC LIMIT 5"
   echo "== La misma información vía API (Cloud Run, con token)"
   URL="$(gcloud run services describe lumina-api --region "$REGION" --format='value(status.url)')"
+  echo "Sin token: HTTP $(curl -s -o /dev/null -w '%{http_code}' "${URL}/alertas")"
   curl -s -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
     "${URL}/alertas?minutos=${MINUTOS}&limite=2" | "$PYTHON" -m json.tool
   ;;
