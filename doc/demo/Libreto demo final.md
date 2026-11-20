@@ -7,7 +7,7 @@ tablero. En la sustentación el equipo lo narra con este libreto mientras corre.
 **Video ya grabado:** `doc/demo/Lumina Bank - Demo end-to-end.mp4` (6:41, 1080p, sin audio). Es una grabación real de
 pantalla del 18 de noviembre de 2026: Chrome con la consola de GCP a la izquierda y una Terminal a la derecha, mientras el
 pipeline corría (job `lumina-demo-1744`, 9 000 transacciones a 20 por segundo). Se cortaron las esperas y cada tramo trae
-el número de escena arriba y una leyenda abajo. La escena 1 (arquitectura) se narra sobre la diapositiva 8, antes de darle
+el número de escena arriba y una leyenda abajo. La escena 1 (arquitectura) se narra sobre la diapositiva 9, antes de darle
 play. La edición se repite con `doc/demo/montaje/editar.py`.
 
 | Escena | Tramo en el video |
@@ -40,7 +40,7 @@ Las secciones 1, 3 y 4 sirven si quieren volver a grabarlo o hacerlo en vivo.
 
    | Pestaña | URL |
    |---|---|
-   | A · Diapositiva de arquitectura streaming | `presentacion/Lumina Bank - Sustentacion.pptx`, diapositiva 8 |
+   | A · Diapositiva de arquitectura streaming | `presentacion/Lumina Bank - Sustentacion.pptx`, diapositiva 9 |
    | B · Data Lake (zona raw) | https://console.cloud.google.com/storage/browser/lumina-bank-utec-lumina-raw?project=lumina-bank-utec |
    | C · Dataproc (Spark) | https://console.cloud.google.com/dataproc/batches?project=lumina-bank-utec |
    | D · BigQuery | https://console.cloud.google.com/bigquery?project=lumina-bank-utec |
@@ -60,7 +60,7 @@ al editar. La columna **Libreto** es lo que dice en vivo quien presenta esa esce
 
 | # | Tiempo | En pantalla | Acción | Libreto |
 |---|---|---|---|---|
-| 1 | 0:00–0:30 | A · Diapositiva 8 | Ninguna; señalar las cajas de izquierda a derecha | "Vamos a seguir una transacción de punta a punta. Entra por Pub/Sub, Dataflow la evalúa con reglas que tienen estado, la decisión queda en BigQuery y la exponemos por una API y un tablero. Todo lo que van a ver corre ahora en nuestro proyecto de Google Cloud." |
+| 1 | 0:00–0:30 | A · Diapositiva 9 | Ninguna; señalar las cajas de izquierda a derecha | "Vamos a seguir una transacción de punta a punta. Entra por Pub/Sub, Dataflow la evalúa con reglas que tienen estado, la decisión queda en BigQuery y la exponemos por una API y un tablero. Todo lo que van a ver corre ahora en nuestro proyecto de Google Cloud." |
 | 2 | 0:30–1:15 | B → C → D | B: abrir `paysim/` (469 MiB). C: mostrar el batch `lumina-etl-20261118-vpc` en *Succeeded*, con la subred `lumina-datos-us-central1`. D: ejecutar la consulta de la **escena 2** | "Primero, el histórico. PaySim llega a la zona raw del Data Lake; Spark en Dataproc Serverless lo limpia dentro de nuestra VPC privada y lo deja en Parquet. En BigQuery son 6,36 millones de transacciones de julio, ya en el modelo estrella. Sobre esa base corre el streaming." |
 | 3 | 1:15–1:45 | F · Job graph | Mostrar el grafo y el panel derecho: 1 worker, región, *Streaming Engine* | "Este es el pipeline de fraude en Dataflow. Lee de Pub/Sub, parsea, manda lo inválido a una cola de errores, y tiene dos etapas con estado: viaje imposible por cliente y velocidad por cuenta destino. Corre en un worker sin IP pública, dentro de la VPC." |
 | 4 | 1:45–2:30 | Terminal + E | Terminal: `bash demo/demo.sh publicar`. Cambiar a E · pestaña *Metrics*: sube la tasa de publicación | "Arrancamos el simulador: publica transacciones reales de PaySim a 20 por segundo, con ubicación y dispositivo. Pub/Sub las recibe y las retiene 7 días; si Dataflow cae, no se pierde nada." |
